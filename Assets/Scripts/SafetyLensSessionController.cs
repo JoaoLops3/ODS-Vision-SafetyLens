@@ -206,7 +206,6 @@ namespace Facens.SafetyLens
 
         void SetTargetFound(bool found, ARTrackedImage image)
         {
-            var wasFound = TargetFound;
             TargetFound = found;
             if (found && image != null)
             {
@@ -218,7 +217,7 @@ namespace Facens.SafetyLens
                     _startedUtc = DateTime.UtcNow;
                 }
 
-                EnsureArContent(image.transform, !wasFound);
+                EnsureArContent(image.transform);
                 _contentRoot.SetActive(true);
 
                 if (Phase == AppPhase.Scanning)
@@ -236,7 +235,7 @@ namespace Facens.SafetyLens
             }
         }
 
-        void EnsureArContent(Transform target, bool realign)
+        void EnsureArContent(Transform target)
         {
             var created = false;
             if (_contentRoot == null)
@@ -251,34 +250,25 @@ namespace Facens.SafetyLens
             if (_contentRoot.transform.parent != target)
                 _contentRoot.transform.SetParent(target, false);
             _contentRoot.transform.localPosition = Vector3.zero;
+            // Sem realinhamento por gravidade: o conteúdo usa os eixos nativos do próprio
+            // ARTrackedImage (Y = normal, X = direita da imagem, Z = topo da imagem, conforme a
+            // Reference Image Library). Reorientar por gravidade era o que deixava a fileira torta
+            // sempre que o celular estava um pouco inclinado ao escanear.
+            _contentRoot.transform.localRotation = Quaternion.identity;
 
-            if (created || realign)
-                AlignContentToViewer(target);
+            if (created)
+                MountVisuals(target);
             RefreshVisuals();
         }
 
         /// <summary>
-        /// Os eixos crus do marcador dependem de como ele foi colocado (retrato/paisagem, mesa/tela).
-        /// Montamos um referencial próprio: Y = normal do marcador, Z = "para cima" visível
-        /// (gravidade se o marcador está em pé; topo do celular se está deitado), X = direita na tela.
-        /// Assim a fileira de itens sempre aparece lado a lado e as placas ficam de pé para quem olha.
-        /// Recalculado só ao (re)encontrar o marcador para não girar junto com o celular.
+        /// Decide só a pose do capacete (deitado se o marcador está na mesa, em pé se está na
+        /// parede/tela) comparando a normal do marcador com a gravidade. Isso NÃO gira o
+        /// _contentRoot — cada item continua no referencial nativo do marcador.
         /// </summary>
-        void AlignContentToViewer(Transform target)
+        void MountVisuals(Transform target)
         {
-            var normal = target.up;
-            var cam = Camera.main;
-            var isVertical = Mathf.Abs(Vector3.Dot(normal, Vector3.up)) < SafetyLensTheme.ArVerticalMarkerDot;
-
-            var reference = isVertical || cam == null ? Vector3.up : cam.transform.up;
-            var inPlaneUp = Vector3.ProjectOnPlane(reference, normal);
-            if (inPlaneUp.sqrMagnitude < 1e-4f && cam != null)
-                inPlaneUp = Vector3.ProjectOnPlane(cam.transform.up, normal);
-            if (inPlaneUp.sqrMagnitude < 1e-4f)
-                inPlaneUp = target.forward;
-
-            _contentRoot.transform.rotation = Quaternion.LookRotation(inPlaneUp.normalized, normal);
-
+            var isVertical = Mathf.Abs(Vector3.Dot(target.up, Vector3.up)) < SafetyLensTheme.ArVerticalMarkerDot;
             foreach (var visual in _visuals.Values)
                 SafetyLensArVisuals.ApplyMounting(visual, isVertical);
         }
