@@ -1,0 +1,1 @@
+Coloque aqui: modelo/placa de pinçamento (PINCH). Preferir .fbx + texturas.

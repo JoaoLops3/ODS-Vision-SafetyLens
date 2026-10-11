@@ -1,0 +1,70 @@
+{
+  "id": "demo-industrial-risk",
+  "title": "Identificação de Riscos Industriais",
+  "targetName": "SafetyLensEquipmentTarget",
+  "intro": "Aponte a câmera para o marcador no equipamento. Toque nas zonas de risco e nos EPIs destacados na ordem indicada. Em seguida responda o quiz.",
+  "hazards": [
+    {
+      "id": "HOT",
+      "label": "Zona quente",
+      "kind": "alert",
+      "instruction": "Toque na placa de alerta: superfície quente / risco de queimadura.",
+      "pictogram": "hot",
+      "x": -0.05,
+      "y": 0.0,
+      "z": 0.0
+    },
+    {
+      "id": "PINCH",
+      "label": "Ponto de pinçamento",
+      "kind": "alert",
+      "instruction": "Toque na placa de alerta: risco de pinçamento mecânico.",
+      "pictogram": "pinch",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    {
+      "id": "EPI",
+      "label": "Capacete",
+      "kind": "epi",
+      "instruction": "Confirme o EPI obrigatório: capacete de segurança.",
+      "model": "helmet",
+      "x": 0.05,
+      "y": 0.0,
+      "z": 0.0
+    }
+  ],
+  "quiz": [
+    {
+      "id": 1,
+      "question": "Qual risco a placa HOT representa neste equipamento?",
+      "options": [
+        "Superfície quente / queimadura",
+        "Queda de altura",
+        "Ruído excessivo"
+      ],
+      "correctIndex": 0
+    },
+    {
+      "id": 2,
+      "question": "Qual EPI foi destacado como obrigatório neste cenário demo?",
+      "options": [
+        "Óculos de sol",
+        "Capacete de segurança",
+        "Protetor auricular apenas"
+      ],
+      "correctIndex": 1
+    },
+    {
+      "id": 3,
+      "question": "Antes de operar o equipamento, o trabalhador deve:",
+      "options": [
+        "Ignorar as zonas de alerta se já conhece a máquina",
+        "Identificar riscos e usar os EPIs indicados",
+        "Remover as proteções para facilitar o acesso"
+      ],
+      "correctIndex": 1
+    }
+  ]
+}

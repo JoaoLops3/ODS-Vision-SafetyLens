@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/SafetyLensAR.unity
+    guid: 983e98a7fa4ec4bfa970bb9f2c3b5bcb
+  m_configObjects:
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 2f3edcd21e2a34be898861a001678b38, type: 2}
+    UnityEditor.XR.ARKit.ARKitSettings: {fileID: 11400000, guid: 2c891458f2e74442db45efbca926f6ef, type: 2}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 12fbe7e1be6bb48dda40fd3a30a6acfe, type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 68e0d33d76d164e7982bd4a7898e2ed7, type: 2}
+  m_UseUCBPForAssetBundles: 0

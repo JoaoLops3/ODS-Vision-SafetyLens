@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "com.unity.xr.arfoundation": "6.3.5",
+    "com.unity.xr.arcore": "6.3.5",
+    "com.unity.xr.arkit": "6.3.5",
+    "com.unity.xr.management": "4.6.1"
+  }
+}
