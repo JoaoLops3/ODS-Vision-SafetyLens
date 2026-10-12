@@ -475,8 +475,10 @@ docs/images/
     │   ├── 10-quiz-pergunta3.PNG
     │   ├── 11-tela-final.PNG
     │   └── 12-tela-compartilhando.PNG
-    └── evidencias/                   ← foto/vídeo de funcionamento (pendente)
+    └── evidencias/                   ← pasta para fotos locais; demo em vídeo no YouTube
 ```
+
+**Demonstração em vídeo (versão 1):** [YouTube Shorts](https://youtube.com/shorts/QbRCsMurnhY)
 
 Galeria completa na seção [17. Como Utilizar](#17-como-utilizar-a-aplicação). Detalhes: [`docs/images/v1/interface/README.md`](docs/images/v1/interface/README.md).
 
@@ -529,8 +531,8 @@ Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-po
 | Evidência               | Onde colocar / link                                                                                  |
 | ----------------------- | ---------------------------------------------------------------------------------------------------- |
 | Screenshots das telas   | [`docs/images/v1/interface/`](docs/images/v1/interface/) (01–12) ✅                                   |
-| Evidência no iPhone     | `docs/images/v1/evidencias/` _(após foto)_                                                           |
-| Vídeo demonstrativo     | link online _(após gravação)_ — ou arquivo em `docs/images/v1/evidencias/`                           |
+| Evidência no iPhone     | `docs/images/v1/evidencias/` _(foto local opcional)_                                                 |
+| Vídeo demonstrativo (v1)| [https://youtube.com/shorts/QbRCsMurnhY](https://youtube.com/shorts/QbRCsMurnhY) ✅                   |
 | Artigo científico       | [SharePoint (Word — versão atualizada)](https://facens-my.sharepoint.com/:w:/g/personal/223969_facens_br/IQC635MrvwTJQr-ThWC7yNzgAfASb7rOqj2sZgzheg6sdYE?e=UEWZgv) |
 
 ---
@@ -543,7 +545,7 @@ Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-po
 | Trello                                         | [https://trello.com/invite/b/6a9c364bf3a2c97532634894/ATTId1a224107fc31f8c12e0758e34583e5a251C5E4B/ods-vision-safetylens](https://trello.com/invite/b/6a9c364bf3a2c97532634894/ATTId1a224107fc31f8c12e0758e34583e5a251C5E4B/ods-vision-safetylens)                           |
 | Artigo científico do projeto                    | [SharePoint (Word — versão atualizada)](https://facens-my.sharepoint.com/:w:/g/personal/223969_facens_br/IQC635MrvwTJQr-ThWC7yNzgAfASb7rOqj2sZgzheg6sdYE?e=UEWZgv)                                                                                                           |
 | Planilha de artigos científicos (base teórica) | [SharePoint](https://facens-my.sharepoint.com/:x:/g/personal/223969_facens_br/IQD6DAxNHPhGSaIQRpkXLhdFAZtFv9VKDNwsFKHG7cuFfUY?e=43COmv) · [`docs/documents/Tabela_Artigos_Cientificos_SafetyLens_UPX8.xlsx`](docs/documents/Tabela_Artigos_Cientificos_SafetyLens_UPX8.xlsx) |
-| Vídeo de demonstração                          | _(será adicionado após a gravação)_                                                                                                                                                                                                                                          |
+| Vídeo de demonstração (versão 1)               | [https://youtube.com/shorts/QbRCsMurnhY](https://youtube.com/shorts/QbRCsMurnhY)                                                                                                                                                                                             |
 | Modelo de README da disciplina                 | [https://github.com/dr-ohata/upx-modelo](https://github.com/dr-ohata/upx-modelo)                                                                                                                                                                                             |
 | Documentação complementar                      | [`docs/`](docs/)                                                                                                                                                                                                                                                             |
 
@@ -561,7 +563,7 @@ Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-po
 | Quiz + export JSON/CSV             | Equipe            | ✅     |
 | Build / testes iPhone 12           | Equipe            | ✅     |
 | Documentação GitHub (este README)  | Equipe            | 🚧     |
-| Screenshots e vídeo                | Equipe            | ⬜     |
+| Screenshots e vídeo (v1)           | Equipe            | ✅     |
 | Testes Android ARCore              | Equipe            | ⬜     |
 | Experimento SUS / retenção 7 dias  | Equipe            | 🚧     |
 
@@ -677,7 +679,7 @@ Uso e redistribuição devem respeitar as políticas da instituição e crédito
 - [x] Testes registrados (parcial; Android pendente)
 - [x] Dispositivos testados informados (iPhone 12 + MacBook M2)
 - [x] Limitações conhecidas documentadas
-- [ ] Evidências da v1 em `docs/images/v1/evidencias/` e/ou link de vídeo
+- [x] Evidência em vídeo da v1 ([YouTube Shorts](https://youtube.com/shorts/QbRCsMurnhY))
 - [x] Artigo do projeto linkado no SharePoint (versão sempre atualizada)
 - [x] Commits representam a evolução do projeto
 - [x] Funções técnicas de **todos** os integrantes preenchidas

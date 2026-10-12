@@ -13,5 +13,4 @@ docs/images/
 | Pasta | Uso | Status |
 |---|---|---|
 | [`v1/interface/`](v1/interface/) | Imagens do projeto (telas, ordem do fluxo) | ✅ |
-| [`v1/evidencias/`](v1/evidencias/) | Evidências de funcionamento | Pendente |
-| `marcador-wl03-equipment-target.png` | Arte do marcador (~20 cm) | ✅ |
+| [`v1/evidencias/`](v1/evidencias/) | Evidências de funcionamento | ✅ vídeo: [YouTube Shorts](https://youtube.com/shorts/QbRCsMurnhY) || `marcador-wl03-equipment-target.png` | Arte do marcador (~20 cm) | ✅ |
