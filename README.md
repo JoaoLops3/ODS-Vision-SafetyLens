@@ -475,10 +475,13 @@ docs/images/
     │   ├── 10-quiz-pergunta3.PNG
     │   ├── 11-tela-final.PNG
     │   └── 12-tela-compartilhando.PNG
-    └── evidencias/                   ← pasta para fotos locais; demo em vídeo no YouTube
+    └── evidencias/
+        └── Video_V1.mov              ← demonstração local ✅
 ```
 
-**Demonstração em vídeo (versão 1):** [YouTube Shorts](https://youtube.com/shorts/QbRCsMurnhY)
+**Demonstração em vídeo (versão 1):**
+- YouTube: [Shorts](https://youtube.com/shorts/QbRCsMurnhY)
+- No repositório: [`docs/images/v1/evidencias/Video_V1.mov`](docs/images/v1/evidencias/Video_V1.mov)
 
 Galeria completa na seção [17. Como Utilizar](#17-como-utilizar-a-aplicação). Detalhes: [`docs/images/v1/interface/README.md`](docs/images/v1/interface/README.md).
 
@@ -532,7 +535,7 @@ Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-po
 | ----------------------- | ---------------------------------------------------------------------------------------------------- |
 | Screenshots das telas   | [`docs/images/v1/interface/`](docs/images/v1/interface/) (01–12) ✅                                   |
 | Evidência no iPhone     | `docs/images/v1/evidencias/` _(foto local opcional)_                                                 |
-| Vídeo demonstrativo (v1)| [https://youtube.com/shorts/QbRCsMurnhY](https://youtube.com/shorts/QbRCsMurnhY) ✅                   |
+| Vídeo demonstrativo (v1)| [YouTube Shorts](https://youtube.com/shorts/QbRCsMurnhY) · [`Video_V1.mov`](docs/images/v1/evidencias/Video_V1.mov) ✅ |
 | Artigo científico       | [SharePoint (Word — versão atualizada)](https://facens-my.sharepoint.com/:w:/g/personal/223969_facens_br/IQC635MrvwTJQr-ThWC7yNzgAfASb7rOqj2sZgzheg6sdYE?e=UEWZgv) |
 
 ---
@@ -545,7 +548,7 @@ Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-po
 | Trello                                         | [https://trello.com/invite/b/6a9c364bf3a2c97532634894/ATTId1a224107fc31f8c12e0758e34583e5a251C5E4B/ods-vision-safetylens](https://trello.com/invite/b/6a9c364bf3a2c97532634894/ATTId1a224107fc31f8c12e0758e34583e5a251C5E4B/ods-vision-safetylens)                           |
 | Artigo científico do projeto                    | [SharePoint (Word — versão atualizada)](https://facens-my.sharepoint.com/:w:/g/personal/223969_facens_br/IQC635MrvwTJQr-ThWC7yNzgAfASb7rOqj2sZgzheg6sdYE?e=UEWZgv)                                                                                                           |
 | Planilha de artigos científicos (base teórica) | [SharePoint](https://facens-my.sharepoint.com/:x:/g/personal/223969_facens_br/IQD6DAxNHPhGSaIQRpkXLhdFAZtFv9VKDNwsFKHG7cuFfUY?e=43COmv) · [`docs/documents/Tabela_Artigos_Cientificos_SafetyLens_UPX8.xlsx`](docs/documents/Tabela_Artigos_Cientificos_SafetyLens_UPX8.xlsx) |
-| Vídeo de demonstração (versão 1)               | [https://youtube.com/shorts/QbRCsMurnhY](https://youtube.com/shorts/QbRCsMurnhY)                                                                                                                                                                                             |
+| Vídeo de demonstração (versão 1)               | [YouTube Shorts](https://youtube.com/shorts/QbRCsMurnhY) · [`docs/images/v1/evidencias/Video_V1.mov`](docs/images/v1/evidencias/Video_V1.mov)                                                                                                                                |
 | Modelo de README da disciplina                 | [https://github.com/dr-ohata/upx-modelo](https://github.com/dr-ohata/upx-modelo)                                                                                                                                                                                             |
 | Documentação complementar                      | [`docs/`](docs/)                                                                                                                                                                                                                                                             |
 
@@ -679,7 +682,7 @@ Uso e redistribuição devem respeitar as políticas da instituição e crédito
 - [x] Testes registrados (parcial; Android pendente)
 - [x] Dispositivos testados informados (iPhone 12 + MacBook M2)
 - [x] Limitações conhecidas documentadas
-- [x] Evidência em vídeo da v1 ([YouTube Shorts](https://youtube.com/shorts/QbRCsMurnhY))
+- [x] Evidência em vídeo da v1 ([YouTube](https://youtube.com/shorts/QbRCsMurnhY) + [`Video_V1.mov`](docs/images/v1/evidencias/Video_V1.mov))
 - [x] Artigo do projeto linkado no SharePoint (versão sempre atualizada)
 - [x] Commits representam a evolução do projeto
 - [x] Funções técnicas de **todos** os integrantes preenchidas

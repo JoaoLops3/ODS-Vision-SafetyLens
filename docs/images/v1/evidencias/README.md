@@ -2,9 +2,10 @@
 
 ## Vídeo demonstrativo
 
-Demonstração da versão 1 no YouTube Shorts:
-
-**https://youtube.com/shorts/QbRCsMurnhY**
+| Onde | Link / arquivo |
+|---|---|
+| YouTube Shorts | https://youtube.com/shorts/QbRCsMurnhY |
+| No repositório | [`Video_V1.mov`](Video_V1.mov) |
 
 ## Fotos locais (opcional)
 

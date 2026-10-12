@@ -5,4 +5,4 @@ Capturas e evidências da **primeira versão** do SafetyLens (Image Tracking + i
 | Pasta | Uso |
 |---|---|
 | [`interface/`](interface/) | Screenshots das telas do app |
-| [`evidencias/`](evidencias/) | Evidências — demo: [YouTube Shorts](https://youtube.com/shorts/QbRCsMurnhY) |
+| [`evidencias/`](evidencias/) | Evidências — [YouTube](https://youtube.com/shorts/QbRCsMurnhY) + [`Video_V1.mov`](evidencias/Video_V1.mov) |
