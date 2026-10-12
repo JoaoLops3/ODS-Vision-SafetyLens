@@ -31,6 +31,8 @@ namespace Facens.SafetyLens
         int _activeHazardIndex;
         int _activeQuizIndex;
         int _quizCorrect;
+        /// <summary>RF03: item ativo só pode ser confirmado depois de toque válido no overlay AR.</summary>
+        bool _currentHazardArSelected;
         float _startedAt = -1f;
         float _finishedAt = -1f;
         DateTime _startedUtc;
@@ -66,6 +68,14 @@ namespace Facens.SafetyLens
             }
         }
         public float HazardProgress => HazardCount == 0 ? 0f : HazardConfirmedCount / (float)HazardCount;
+        /// <summary>True após toque no objeto AR do item ativo — habilita “Confirmar item”.</summary>
+        public bool CurrentHazardArSelected => _currentHazardArSelected;
+        /// <summary>RF03: confirmar só com marcador visível + seleção por toque no overlay.</summary>
+        public bool CanConfirmCurrentHazard =>
+            Phase == AppPhase.RiskInspection
+            && TargetFound
+            && CurrentHazard != null
+            && _currentHazardArSelected;
         public SafetyLensHazard CurrentHazard =>
             HazardCount == 0 || _activeHazardIndex < 0 || _activeHazardIndex >= HazardCount
                 ? null
@@ -218,6 +228,7 @@ namespace Facens.SafetyLens
             _activeHazardIndex = 0;
             _activeQuizIndex = 0;
             _hazardDone = new bool[HazardCount];
+            _currentHazardArSelected = false;
             _startedAt = -1f;
             _finishedAt = -1f;
             ExportSummary = string.Empty;
@@ -274,6 +285,7 @@ namespace Facens.SafetyLens
             else
             {
                 if (_contentRoot != null) _contentRoot.SetActive(false);
+                _currentHazardArSelected = false;
                 if (Phase == AppPhase.RiskInspection || Phase == AppPhase.Scanning)
                     StatusMessage = "Marcador perdido. Aponte a câmera para a placa de novo.";
             }
@@ -384,12 +396,26 @@ namespace Facens.SafetyLens
             if (tag == null || CurrentHazard == null) return;
 
             if (tag.hazardId == CurrentHazard.id)
-                ConfirmCurrentHazard();
+                SelectCurrentHazardFromAr();
             else
             {
+                _currentHazardArSelected = false;
                 RegisterError($"Selecao incorreta: {tag.hazardId}. Esperado: {CurrentHazard.id}.");
                 ShowFeedback($"Não é esse. Procure: {CurrentHazard.label}", true);
             }
+        }
+
+        /// <summary>
+        /// RF03 — primeiro passo: toque no overlay AR do item ativo. Só depois o botão confirma.
+        /// </summary>
+        void SelectCurrentHazardFromAr()
+        {
+            if (Phase != AppPhase.RiskInspection || !TargetFound || CurrentHazard == null) return;
+            if (_currentHazardArSelected) return;
+
+            _currentHazardArSelected = true;
+            ShowFeedback($"Selecionado: {CurrentHazard.label}. Confirme abaixo.", false);
+            Debug.Log($"[SafetyLens] Hazard selecionado via AR: {CurrentHazard.id}");
         }
 
         /// <summary>
@@ -433,11 +459,13 @@ namespace Facens.SafetyLens
 
         public void ConfirmCurrentHazard()
         {
-            if (Phase != AppPhase.RiskInspection || !TargetFound || CurrentHazard == null) return;
+            // Sem seleção AR o botão não confirma — evita burlar RF03 / métricas de toque.
+            if (!CanConfirmCurrentHazard) return;
 
             _hazardDone[_activeHazardIndex] = true;
             var confirmedLabel = CurrentHazard.label;
-            Debug.Log($"[SafetyLens] Hazard confirmado: {CurrentHazard.id}");
+            _currentHazardArSelected = false;
+            Debug.Log($"[SafetyLens] Hazard confirmado (AR+botão): {CurrentHazard.id}");
 
             if (_activeHazardIndex >= HazardCount - 1)
             {
@@ -640,6 +668,7 @@ namespace Facens.SafetyLens
             _activeHazardIndex = 0;
             _activeQuizIndex = 0;
             _hazardDone = new bool[HazardCount];
+            _currentHazardArSelected = false;
             _startedAt = -1f;
             _finishedAt = -1f;
             ExportSummary = string.Empty;

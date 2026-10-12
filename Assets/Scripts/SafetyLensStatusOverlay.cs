@@ -301,7 +301,8 @@ namespace Facens.SafetyLens
             Color chipBg = T.SurfaceMuted, chipFg = T.InkSoft;
             var hazard = c.CurrentHazard;
             var inspecting = c.Phase == AppPhase.RiskInspection && hazard != null;
-            var canConfirm = inspecting && c.TargetFound;
+            // RF03: botão só libera depois do toque no objeto AR do item ativo.
+            var canConfirm = c.CanConfirmCurrentHazard;
 
             if (!inspecting)
             {
@@ -318,8 +319,21 @@ namespace Facens.SafetyLens
                 chipFg = hazard.IsEpi ? T.Info : T.Danger;
                 title = hazard.label;
                 body = hazard.instruction;
-                hint = c.TargetFound ? string.Empty : c.StatusMessage;
-                buttonLabel = c.TargetFound ? "Confirmar item" : "Aponte para a placa";
+                if (!c.TargetFound)
+                {
+                    hint = c.StatusMessage;
+                    buttonLabel = "Aponte para a placa";
+                }
+                else if (!c.CurrentHazardArSelected)
+                {
+                    hint = "Toque no item destacado na câmera para selecionar.";
+                    buttonLabel = "Toque no item na câmera";
+                }
+                else
+                {
+                    hint = string.Empty;
+                    buttonLabel = "Confirmar item";
+                }
             }
 
             var chipStyle = Colored(_overline, chipFg);
