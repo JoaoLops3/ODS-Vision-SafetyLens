@@ -3,28 +3,28 @@ using UnityEngine;
 namespace Facens.SafetyLens
 {
     /// <summary>
-    /// Rótulo acima do objeto no "para cima" da tela. O plano de conteúdo já fica de frente para a
-    /// câmera; aqui só garantimos texto legível (TextMesh olha +Z — 180° em Y evita verso espelhado)
-    /// e posição ancorada no topo do renderer, sem orbitar o rótulo com cam.up no mundo.
+    /// Rótulo legível na câmera AR. TextMesh quer +Z apontando para longe da câmera;
+    /// rotação world (não local) funciona tanto com placa billboard quanto com EPI no marcador.
     /// </summary>
     public sealed class SafetyLensBillboard : MonoBehaviour
     {
-        /// <summary>Objeto que o rótulo acompanha; o rótulo fica acima dele no eixo local Y do pai.</summary>
+        /// <summary>Objeto que o rótulo acompanha.</summary>
         public Renderer anchor;
         public float gap;
-
-        static readonly Quaternion FaceViewerOffset = Quaternion.Euler(0f, 180f, 0f);
 
         void LateUpdate()
         {
             var cam = Camera.main;
             if (cam == null) return;
 
-            transform.rotation = cam.transform.rotation * FaceViewerOffset;
+            var awayFromCam = transform.position - cam.transform.position;
+            if (awayFromCam.sqrMagnitude < 1e-8f) return;
+            transform.rotation = Quaternion.LookRotation(awayFromCam.normalized, cam.transform.up);
 
             if (anchor == null) return;
             var bounds = anchor.bounds;
-            transform.position = bounds.center + cam.transform.up * (bounds.extents.magnitude * 0.55f + gap);
+            var rise = Mathf.Max(bounds.extents.y, bounds.extents.magnitude * 0.35f);
+            transform.position = bounds.center + cam.transform.up * (rise + gap);
         }
     }
 }

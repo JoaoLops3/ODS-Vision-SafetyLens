@@ -46,3 +46,17 @@ SafetyLens Status Overlay
 ## Conteúdo externo
 
 `Assets/Resources/safetylens_scenario.json` — hazards, EPIs e quiz separados da lógica C#.
+
+Posição dos hazards: **UV no marcador** (`u`/`v` 0–1 → letras A/B/C), convertida em
+`SafetyLensHazard.LocalPositionOnMarker` para o espaço local do `ARTrackedImage`.
+Ajuste fino opcional em metros (`x`/`y` no plano, `z` = lift). Ver `docs/CUSTOMIZACAO.md`.
+
+## Validação no Editor
+
+**SafetyLens → Validar projeto** exige:
+
+- Cena (ARSession, XROrigin, TrackedImageManager, overlays, câmera única)
+- Reference Image Library com nome `SafetyLensEquipmentTarget`
+- Cenário com `targetName` igual + UVs em `[0,1]`
+- **Android:** ARCore Loader
+- **iOS:** ARKit Loader + Metal only + `cameraUsageDescription`

@@ -31,8 +31,8 @@ namespace Facens.SafetyLens
     }
 
     /// <summary>
-    /// Fábrica dos visuais de RA. Placas e capacete ficam no plano de leitura (de frente para a
-    /// câmera); o SessionController ancora esse plano na posição do marcador. Materiais em Resources.
+    /// Fábrica dos visuais de RA. Posição vem das UVs A/B/C no marcador; orientação billboard
+    /// fica a cargo do SessionController. Materiais em Resources.
     /// </summary>
     public static class SafetyLensArVisuals
     {
@@ -55,7 +55,8 @@ namespace Facens.SafetyLens
 
             var root = new GameObject($"SafetyLens_{hazard.kind}_{hazard.id}");
             root.transform.SetParent(parent, false);
-            root.transform.localPosition = hazard.LocalPosition;
+            root.transform.localPosition = hazard.LocalPositionOnMarker(
+                new Vector2(SafetyLensTheme.ArMarkerWidth, SafetyLensTheme.ArMarkerHeight));
             visual.Root = root.transform;
 
             if (hazard.IsEpi)
@@ -72,20 +73,61 @@ namespace Facens.SafetyLens
         }
 
         /// <summary>
-        /// Capacete em pé no plano de leitura (Y = cima da tela). O _contentRoot já aponta +Z
-        /// para a câmera, então não precisamos mais distinguir marcador deitado vs. em pé.
+        /// Capacete no espaço do marcador: +Y local = normal da arte (sai do plano).
+        /// Base do AABB em y=0 → assenta à frente da letra C, sem flutuar “acima” na tela.
         /// </summary>
         public static void ApplyMounting(SafetyLensHazardVisual visual, bool markerIsVertical = false)
         {
             if (!visual.IsModel || visual.Body == null) return;
-            // Capacete de frente para a tela (o mesh do FBX nasce de três quartos).
-            visual.Body.localRotation = Quaternion.Euler(0f, 180f, 0f);
+
+            visual.Body.localRotation = Quaternion.identity;
             visual.Body.localPosition = Vector3.zero;
+            SeatBodyOnMarkerPlane(visual);
+
+            // Anel no plano do marcador, olhando para fora (+Y), não de perfil.
+            if (visual.Ring != null)
+            {
+                visual.Ring.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+                visual.Ring.localPosition = new Vector3(0f, SafetyLensTheme.ArRingLift, 0f);
+            }
+        }
+
+        /// <summary>Recentra XZ e apoia a base do mesh no pivot da âncora UV.</summary>
+        static void SeatBodyOnMarkerPlane(SafetyLensHazardVisual visual)
+        {
+            var renderers = visual.Body.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0) return;
+
+            var local = new Bounds();
+            var init = false;
+            foreach (var r in renderers)
+            {
+                var b = r.bounds;
+                var min = b.min;
+                var max = b.max;
+                for (var i = 0; i < 8; i++)
+                {
+                    var corner = new Vector3(
+                        (i & 1) == 0 ? min.x : max.x,
+                        (i & 2) == 0 ? min.y : max.y,
+                        (i & 4) == 0 ? min.z : max.z);
+                    var lp = visual.Root.InverseTransformPoint(corner);
+                    if (!init)
+                    {
+                        local = new Bounds(lp, Vector3.zero);
+                        init = true;
+                    }
+                    else local.Encapsulate(lp);
+                }
+            }
+
+            if (!init) return;
+            visual.Body.localPosition -= new Vector3(local.center.x, local.min.y, local.center.z);
         }
 
         /// <summary>
-        /// Placa no plano da tela: quad nativo (XY, olhando +Z). O _contentRoot gira para a
-        /// câmera, então a placa fica legível de frente — sem deitar no plano do marcador.
+        /// Placa: quad nativo (XY, olha +Z). O root billboard aponta +Z para a câmera;
+        /// a posição local vem da UV A/B/C no marcador.
         /// </summary>
         static void BuildSign(SafetyLensHazard hazard, SafetyLensHazardVisual visual)
         {
@@ -159,6 +201,14 @@ namespace Facens.SafetyLens
                 if (main == null || r.bounds.size.sqrMagnitude > main.bounds.size.sqrMagnitude) main = r;
                 if (!hasBounds) { bounds = r.bounds; hasBounds = true; }
                 else bounds.Encapsulate(r.bounds);
+            }
+
+            // Token ArHelmetWidth é a fonte da verdade — o prefab pode ter sido gerado com valor velho.
+            if (hasBounds)
+            {
+                var footprint = Mathf.Max(bounds.size.x, bounds.size.z);
+                if (footprint > 1e-5f)
+                    body.transform.localScale *= SafetyLensTheme.ArHelmetWidth / footprint;
             }
 
             if (body.GetComponent<Collider>() == null && hasBounds)

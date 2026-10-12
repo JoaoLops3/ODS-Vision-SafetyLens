@@ -36,16 +36,34 @@ namespace Facens.SafetyLens
         public string pictogram;
         /// <summary>Modelo 3D (epi): helmet. Vazio = inferido pelo id/label.</summary>
         public string model;
+        /// <summary>Âncora UV no marcador: 0 = borda esquerda, 1 = direita.</summary>
+        public float u;
+        /// <summary>Âncora UV no marcador: 0 = borda inferior, 1 = superior.</summary>
+        public float v;
+        /// <summary>Ajuste fino em metros no plano do marcador (+X direita, +Y sobe a arte).</summary>
         public float x;
         public float y;
+        /// <summary>Elevação em metros fora do plano do marcador (+Y do ARTrackedImage). 0 = token padrão.</summary>
         public float z;
 
         /// <summary>
-        /// Posição no plano de leitura (de frente para a câmera). O +Z do conteúdo aponta para a
-        /// câmera, então o +X local aparece à esquerda na tela — por isso o X do JSON é negado:
-        /// x positivo = direita na tela, x negativo = esquerda. Y = cima/baixo.
+        /// Posição local filha do ARTrackedImage (plano XZ, +Y saindo da arte).
+        /// u/v mapeiam o ponto fixo da arte; size vem da pose rastreada (ou do tamanho de referência).
         /// </summary>
-        public Vector3 LocalPosition => new Vector3(-x, y, 0f);
+        public Vector3 LocalPositionOnMarker(Vector2 markerSizeMeters)
+        {
+            var width = markerSizeMeters.x > 1e-4f ? markerSizeMeters.x : SafetyLensTheme.ArMarkerWidth;
+            var height = markerSizeMeters.y > 1e-4f ? markerSizeMeters.y : SafetyLensTheme.ArMarkerHeight;
+            // z no JSON sobrescreve; senão EPI usa lift mínimo e placas o lift padrão.
+            float lift;
+            if (Mathf.Abs(z) > 1e-6f) lift = z;
+            else if (IsEpi) lift = SafetyLensTheme.ArHelmetLift;
+            else lift = SafetyLensTheme.ArMarkerLift;
+            return new Vector3(
+                (u - 0.5f) * width + x,
+                lift,
+                (v - 0.5f) * height + y);
+        }
         public bool IsAlert => string.Equals(kind, "alert", StringComparison.OrdinalIgnoreCase);
         public bool IsEpi => string.Equals(kind, "epi", StringComparison.OrdinalIgnoreCase);
 

@@ -52,15 +52,23 @@ namespace Facens.SafetyLens
         public static readonly Color HazardTintDone = new Color(0.86f, 0.86f, 0.86f, 1f);
         public static readonly Color HelmetBase = Brand;
 
-        /// <summary>Dimensões dos objetos de RA em metros (fileira HUD à frente da câmera).</summary>
-        public const float ArSignWidth = 0.10f;
-        public const float ArSignLift = 0.003f;
-        public const float ArHelmetWidth = 0.09f;
-        public const float ArRingDiameter = 0.13f;
+        /// <summary>Tamanho físico do alvo (mesmo valor da XR Reference Image Library).</summary>
+        public const float ArMarkerWidth = 0.20f;
+        public const float ArMarkerHeight = 0.133333f;
+        /// <summary>Elevação padrão das placas fora do plano do marcador (metros).</summary>
+        public const float ArMarkerLift = 0.008f;
+        /// <summary>EPI 3D: só o necessário para não z-fight com a arte — assenta na frente da letra.</summary>
+        public const float ArHelmetLift = 0.002f;
+
+        /// <summary>Dimensões dos overlays em metros — cabem no círculo das letras A/B/C (~3,5 cm).</summary>
+        public const float ArSignWidth = 0.036f;
+        public const float ArSignLift = 0.002f;
+        public const float ArHelmetWidth = 0.034f;
+        public const float ArRingDiameter = 0.044f;
         public const float ArRingLift = 0.001f;
         public const float ArDoneRingScale = 0.85f;
-        public const float ArLabelGap = 0.005f;
-        public const float ArLabelScale = 0.0034f;
+        public const float ArLabelGap = 0.003f;
+        public const float ArLabelScale = 0.0022f;
         public const float ArActiveScale = 1.08f;
         public const float ArIdleScale = 0.88f;
         public const float ArDoneScale = 0.92f;
@@ -68,13 +76,6 @@ namespace Facens.SafetyLens
         public const float ArPulseSpeed = 2.4f;
         /// <summary>|normal·up| abaixo disso = marcador em pé (tela, parede, máquina).</summary>
         public const float ArVerticalMarkerDot = 0.6f;
-        /// <summary>
-        /// Filho da câmera AR: fica no centro do frame. Distância local Z (m) até o plano da fileira.
-        /// </summary>
-        public const float ArViewerMinDistance = 0.55f;
-        public const float ArViewerMaxDistance = 0.75f;
-        /// <summary>Sobe o plano na tela para não ficar atrás do card inferior da UI.</summary>
-        public const float ArViewerScreenLift = 0.08f;
 
         public const float SpaceXs = 4f;
         public const float SpaceSm = 8f;

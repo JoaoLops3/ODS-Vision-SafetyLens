@@ -68,7 +68,7 @@ namespace Facens.SafetyLens.Editor
             SafetyLensVisualAssetsSetup.EnsureAll(ScenePath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[SafetyLens] Projeto configurado. Use SafetyLens > Validar projeto e depois Build and Run Android.");
+            Debug.Log("[SafetyLens] Projeto configurado. Use SafetyLens > Validar projeto; depois Build iOS (Xcode) ou Build and Run Android.");
         }
 
         [MenuItem("SafetyLens/Validar projeto")]
@@ -93,6 +93,13 @@ namespace Facens.SafetyLens.Editor
                 Debug.LogError("[SafetyLens] Reference Image Library ausente ou invalida.");
                 errors++;
             }
+            else if (manager.referenceLibrary[0].name != TargetName)
+            {
+                Debug.LogError(
+                    $"[SafetyLens] Nome do Image Target na library ('{manager.referenceLibrary[0].name}') " +
+                    $"diferente de '{TargetName}'.");
+                errors++;
+            }
 
             var scenario = Resources.Load<TextAsset>("safetylens_scenario");
             if (scenario == null)
@@ -100,26 +107,78 @@ namespace Facens.SafetyLens.Editor
                 Debug.LogError("[SafetyLens] Resources/safetylens_scenario.json ausente.");
                 errors++;
             }
-
-            var xr = GetAndroidXRSettings();
-            var arCore = false;
-            if (xr?.AssignedSettings != null)
+            else
             {
-                foreach (var loader in xr.AssignedSettings.activeLoaders)
+                try
                 {
-                    if (loader != null && loader.GetType().FullName == "UnityEngine.XR.ARCore.ARCoreLoader")
-                        arCore = true;
+                    var parsed = JsonUtility.FromJson<SafetyLensScenario>(scenario.text);
+                    if (parsed == null || parsed.hazards == null || parsed.hazards.Length == 0)
+                    {
+                        Debug.LogError("[SafetyLens] Cenario sem hazards.");
+                        errors++;
+                    }
+                    else if (string.IsNullOrWhiteSpace(parsed.targetName) || parsed.targetName != TargetName)
+                    {
+                        Debug.LogError(
+                            $"[SafetyLens] scenario.targetName ('{parsed.targetName}') deve ser '{TargetName}' " +
+                            "(mesmo nome da Reference Image Library).");
+                        errors++;
+                    }
+                    else
+                    {
+                        foreach (var h in parsed.hazards)
+                        {
+                            if (h.u < 0f || h.u > 1f || h.v < 0f || h.v > 1f)
+                            {
+                                Debug.LogError(
+                                    $"[SafetyLens] Hazard '{h.id}' com UV fora de [0,1]: u={h.u}, v={h.v}. " +
+                                    "Ancoras sao fracoes do marcador (A/B/C), nao metros de HUD.");
+                                errors++;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[SafetyLens] Falha ao ler safetylens_scenario.json: {ex.Message}");
+                    errors++;
                 }
             }
 
-            if (!arCore)
+            // Android: ARCore obrigatorio para Build and Run Android.
+            if (!HasXrLoader(BuildTargetGroup.Android, "UnityEngine.XR.ARCore.ARCoreLoader"))
             {
-                Debug.LogError("[SafetyLens] ARCore Loader nao habilitado.");
+                Debug.LogError("[SafetyLens] [Android] ARCore Loader nao habilitado.");
+                errors++;
+            }
+
+            // iOS: ARKit + Metal + privacidade da camera — sem isso o iPhone falha mesmo com "VALIDACAO OK" antiga.
+            if (!HasXrLoader(BuildTargetGroup.iOS, "UnityEngine.XR.ARKit.ARKitLoader"))
+            {
+                Debug.LogError("[SafetyLens] [iOS] ARKit Loader nao habilitado.");
+                errors++;
+            }
+
+            var iosApis = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
+            var metalOnly = iosApis != null && iosApis.Length == 1 && iosApis[0] == GraphicsDeviceType.Metal;
+            if (!metalOnly)
+            {
+                Debug.LogError("[SafetyLens] [iOS] Graphics API deve ser apenas Metal (ARKitBackground).");
+                errors++;
+            }
+
+            if (string.IsNullOrWhiteSpace(PlayerSettings.iOS.cameraUsageDescription))
+            {
+                Debug.LogError("[SafetyLens] [iOS] NSCameraUsageDescription / cameraUsageDescription ausente.");
                 errors++;
             }
 
             if (errors == 0)
-                Debug.Log("[SafetyLens] VALIDACAO OK: baseline estrutural pronto para Android ARCore / iOS ARKit.");
+            {
+                Debug.Log(
+                    "[SafetyLens] VALIDACAO OK: cena + library + cenario UV; " +
+                    "Android=ARCore; iOS=ARKit+Metal+camera privacy.");
+            }
             else
                 Debug.LogError($"[SafetyLens] VALIDACAO FALHOU: {errors} problema(s).");
         }
@@ -367,9 +426,7 @@ namespace Facens.SafetyLens.Editor
             PlayerSettings.iOS.cameraUsageDescription =
                 "O SafetyLens usa a camera para Realidade Aumentada e identificacao de riscos industriais.";
             // ARKitBackground exige Metal; OpenGL no iPhone quebra o feed da câmera.
-            // Automatic=true deixa a lista voltar a incluir APIs que matam o blit ARKit.
-            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.iOS, false);
-            PlayerSettings.SetGraphicsAPIs(BuildTarget.iOS, new[] { GraphicsDeviceType.Metal });
+            EnsureIosMetalOnly();
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.iOS, ScriptingImplementation.IL2CPP);
 
             var perTarget = EnsureXRGeneralSettings();
@@ -422,6 +479,41 @@ namespace Facens.SafetyLens.Editor
             XRGeneralSettingsPerBuildTarget p = null;
             EditorBuildSettings.TryGetConfigObject(XRGeneralSettings.k_SettingsKey, out p);
             return p?.SettingsForBuildTarget(BuildTargetGroup.Android);
+        }
+
+        static bool HasXrLoader(BuildTargetGroup group, string loaderTypeName)
+        {
+            XRGeneralSettingsPerBuildTarget perTarget = null;
+            EditorBuildSettings.TryGetConfigObject(XRGeneralSettings.k_SettingsKey, out perTarget);
+            var settings = perTarget?.SettingsForBuildTarget(group);
+            if (settings?.AssignedSettings == null) return false;
+
+            foreach (var loader in settings.AssignedSettings.activeLoaders)
+            {
+                if (loader != null && loader.GetType().FullName == loaderTypeName)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Metal-only no iOS. Evita SetUseDefault(false) antes da lista — isso zera as APIs
+        /// e o Editor loga "empty graphics device types list".
+        /// </summary>
+        static void EnsureIosMetalOnly()
+        {
+            var current = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
+            var usingDefault = PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.iOS);
+            var metalOnly = !usingDefault
+                            && current != null
+                            && current.Length == 1
+                            && current[0] == GraphicsDeviceType.Metal;
+            if (metalOnly) return;
+
+            PlayerSettings.SetGraphicsAPIs(BuildTarget.iOS, new[] { GraphicsDeviceType.Metal });
+            if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.iOS))
+                PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.iOS, false);
         }
 
         static void EnsureScene(XRReferenceImageLibrary library, bool force)

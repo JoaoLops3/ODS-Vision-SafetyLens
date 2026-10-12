@@ -170,15 +170,14 @@ namespace Facens.SafetyLens
         void OnEnable()
         {
             _imageManager.trackablesChanged.AddListener(OnTrackedImagesChanged);
-            // A pose ARKit/ARPoseDriver costuma fechar em onBeforeRender — depois do LateUpdate.
-            // Alinhar aqui evita a fileira "de lado" (conteúdo com pose velha da câmera).
-            Application.onBeforeRender += AlignContentToViewer;
+            // Pose do marcador fecha em onBeforeRender — sincroniza âncoras A/B/C depois do ARKit.
+            Application.onBeforeRender += AlignContentToMarker;
         }
 
         void OnDisable()
         {
             _imageManager.trackablesChanged.RemoveListener(OnTrackedImagesChanged);
-            Application.onBeforeRender -= AlignContentToViewer;
+            Application.onBeforeRender -= AlignContentToMarker;
         }
 
         void LoadScenario()
@@ -243,24 +242,10 @@ namespace Facens.SafetyLens
             }
         }
 
-        float _lastPoseLogAt = -1f;
-
         void HandleTrackedImage(ARTrackedImage image)
         {
             if (image.referenceImage.name != _scenario.targetName) return;
-            var tracking = image.trackingState == TrackingState.Tracking;
-
-            // DIAGNÓSTICO TEMPORÁRIO: confirma se o ARKit está mesmo remitindo uma pose nova
-            // a cada atualização, ou se a posição reportada fica parada enquanto o celular se move.
-            // Remover depois de confirmar a causa do "objeto estático, só o texto gira".
-            if (Time.realtimeSinceStartup - _lastPoseLogAt > 0.2f)
-            {
-                _lastPoseLogAt = Time.realtimeSinceStartup;
-                var p = image.transform.position;
-                Debug.Log($"[SafetyLens][POSE] tracking={image.trackingState} pos=({p.x:F3},{p.y:F3},{p.z:F3})");
-            }
-
-            SetTargetFound(tracking, image);
+            SetTargetFound(image.trackingState == TrackingState.Tracking, image);
         }
 
         void SetTargetFound(bool found, ARTrackedImage image)
@@ -299,7 +284,7 @@ namespace Facens.SafetyLens
             var created = false;
             if (_contentRoot == null)
             {
-                // Criado na origem sem rotação: os visuais medem seus bounds em espaço local.
+                // Filho do marcador: cada hazard usa UV (A/B/C) no espaço local do ARTrackedImage.
                 _contentRoot = new GameObject("SafetyLens_ArContent");
                 foreach (var hazard in _scenario.hazards)
                     _visuals[hazard.id] = SafetyLensArVisuals.Create(hazard, _contentRoot.transform);
@@ -312,7 +297,7 @@ namespace Facens.SafetyLens
                     SafetyLensArVisuals.ApplyMounting(visual);
             }
 
-            AlignContentToViewer();
+            AlignContentToMarker();
             RefreshVisuals();
         }
 
@@ -329,36 +314,59 @@ namespace Facens.SafetyLens
         }
 
         /// <summary>
-        /// Fileira filha da câmera AR: sempre no centro do frame e de frente para a tela.
-        /// O marcador só libera a exibição e sugere a distância — nunca a orientação.
+        /// Conteúdo parentalizado no ARTrackedImage: HOT/PINCH/EPI ficam nas letras A/B/C da arte.
+        /// Só a orientação billboard aponta para a câmera — a posição é âncora de mundo no marcador.
         /// </summary>
-        void AlignContentToViewer()
+        void AlignContentToMarker()
         {
-            if (_contentRoot == null || !TargetFound) return;
+            if (_contentRoot == null || !TargetFound || _trackedImage == null) return;
 
+            var marker = _trackedImage.transform;
+            if (_contentRoot.transform.parent != marker)
+                _contentRoot.transform.SetParent(marker, false);
+
+            _contentRoot.transform.localPosition = Vector3.zero;
+            _contentRoot.transform.localRotation = Quaternion.identity;
+            _contentRoot.transform.localScale = Vector3.one;
+
+            var size = _trackedImage.size;
+            if (size.x < 1e-4f || size.y < 1e-4f)
+                size = new Vector2(SafetyLensTheme.ArMarkerWidth, SafetyLensTheme.ArMarkerHeight);
+
+            foreach (var hazard in _scenario.hazards)
+            {
+                if (!_visuals.TryGetValue(hazard.id, out var visual) || visual.Root == null) continue;
+                visual.Root.localPosition = hazard.LocalPositionOnMarker(size);
+            }
+
+            FaceHazardsTowardCamera();
+        }
+
+        /// <summary>
+        /// Placas: billboard para a câmera. EPI 3D: fica no espaço do marcador (+Y saindo da arte),
+        /// assentado à frente da letra — billboard faria o capacete “subir” na tela.
+        /// </summary>
+        void FaceHazardsTowardCamera()
+        {
             var cam = ResolveArCamera();
             if (cam == null) return;
 
-            var camTransform = cam.transform;
-            if (_contentRoot.transform.parent != camTransform)
-                _contentRoot.transform.SetParent(camTransform, false);
-
-            var distance = SafetyLensTheme.ArViewerMinDistance;
-            if (_trackedImage != null)
+            var camPos = cam.transform.position;
+            var camUp = cam.transform.up;
+            foreach (var visual in _visuals.Values)
             {
-                distance = Mathf.Clamp(
-                    Vector3.Distance(camTransform.position, _trackedImage.transform.position),
-                    SafetyLensTheme.ArViewerMinDistance,
-                    SafetyLensTheme.ArViewerMaxDistance);
-            }
+                if (visual.Root == null) continue;
 
-            // local +Z = frente da câmera; 180° em Y faz o +Z do conteúdo apontar para o usuário.
-            _contentRoot.transform.localPosition = new Vector3(
-                0f,
-                SafetyLensTheme.ArViewerScreenLift,
-                distance);
-            _contentRoot.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-            _contentRoot.transform.localScale = Vector3.one;
+                if (visual.IsModel)
+                {
+                    visual.Root.localRotation = Quaternion.identity;
+                    continue;
+                }
+
+                var toCam = camPos - visual.Root.position;
+                if (toCam.sqrMagnitude < 1e-8f) continue;
+                visual.Root.rotation = Quaternion.LookRotation(toCam.normalized, camUp);
+            }
         }
 
         void Update()
@@ -686,7 +694,7 @@ namespace Facens.SafetyLens
             }
         }
 
-        /// <summary>Pulso no anel do item ativo. Pose da fileira: <see cref="AlignContentToViewer"/> em onBeforeRender.</summary>
+        /// <summary>Pulso no anel do item ativo. Âncoras A/B/C: <see cref="AlignContentToMarker"/> em onBeforeRender.</summary>
         void LateUpdate()
         {
             if (Phase != AppPhase.RiskInspection || _visuals.Count == 0) return;

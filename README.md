@@ -68,7 +68,7 @@ contexto do UPX / Facens.
 ### Marcador
 
 Use `Assets/Markers/safetylens-equipment-target.png`. Impresso com **~20 cm de largura** dá a escala
-correta; também funciona exibido na tela do computador (retrato ou paisagem — o app ajusta a orientação).
+correta (mesmo valor da Reference Image Library); também funciona na tela do computador.
 
 ### Build iOS (iPhone)
 
@@ -96,7 +96,8 @@ sessões ficam apenas no aparelho (`Application.persistentDataPath`, arquivos `s
 
 ## Personalizar o cenário
 
-Edite `Assets/Resources/safetylens_scenario.json`:
+Edite `Assets/Resources/safetylens_scenario.json`. Cada hazard é ancorado por **UV no marcador**
+(letras A/B/C da arte), não por metros de HUD na câmera:
 
 ```json
 {
@@ -105,15 +106,22 @@ Edite `Assets/Resources/safetylens_scenario.json`:
   "kind": "alert",
   "instruction": "Toque na placa de alerta: superfície quente / risco de queimadura.",
   "pictogram": "hot",
-  "x": -0.05, "y": 0.0, "z": 0.0
+  "u": 0.238,
+  "v": 0.530,
+  "x": 0.0,
+  "y": 0.0,
+  "z": 0.0
 }
 ```
 
 - `kind`: `alert` (placa de risco) ou `epi` (equipamento de proteção).
 - `pictogram` (alert): `hot`, `pinch` ou `generic` (ponto de exclamação).
 - `model` (epi): `helmet`.
-- `x/y/z` em metros: `x` = direita na tela, `z` = para cima, `y` = afastamento do marcador.
+- `u` / `v`: fração 0–1 no alvo (`u` esquerda→direita, `v` baixo→cima). Demo: A≈HOT, B≈PINCH, C≈EPI.
+- `x` / `y`: ajuste fino em metros no plano da arte; `z`: elevação saindo do plano (`0` = padrão).
 - `quiz`: perguntas com `options` e `correctIndex`.
+
+Detalhes e tabela A/B/C em `docs/CUSTOMIZACAO.md`.
 
 Para trocar o capacete, substitua `Assets/Models/EPI/HardHat.fbx` e rode
 **SafetyLens → Regerar prefab do capacete (FBX)**.
@@ -155,9 +163,9 @@ TESTE_DE_ACEITACAO.md
 
 - **Câmera sob demanda.** O `ARSession` é salvo inativo na cena e só liga em **Abrir câmera**: evita o
   indicador de câmera sem motivo e economiza bateria.
-- **Referencial próprio para o conteúdo.** Os eixos do marcador mudam conforme ele está (mesa/tela,
-  retrato/paisagem). Ao reconhecer o marcador, o conteúdo é alinhado à gravidade (marcador em pé) ou ao
-  topo do celular (marcador deitado), então a fileira de itens sempre aparece lado a lado e legível.
+- **Âncoras UV no marcador.** Um único `ARTrackedImage` (20 cm); HOT/PINCH/EPI são filhos locais nas
+  letras A/B/C via `u`/`v`. Placas billboardam para a câmera; o capacete fica no espaço do marcador
+  (assentado à frente da letra).
 - **Placas geradas em código.** Não havia modelos gratuitos confiáveis das placas ISO 7010; elas são
   desenhadas por distância assinada (SDF) em uma `Task` fora da thread principal e só enviadas à GPU na
   thread principal.

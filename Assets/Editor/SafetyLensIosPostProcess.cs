@@ -144,6 +144,12 @@ namespace Facens.SafetyLens.Editor
                 InjectMissingFlags,
                 RegexOptions.Singleline);
 
+            // UnityFramework (Release*) às vezes reaparece com YES depois do unlock do Xcode.
+            text = Regex.Replace(
+                text,
+                @"ENABLE_MODULE_VERIFIER\s*=\s*YES\s*;",
+                "ENABLE_MODULE_VERIFIER = NO;");
+
             File.WriteAllText(pbxPath, text);
 
             var after = File.ReadAllText(pbxPath);
