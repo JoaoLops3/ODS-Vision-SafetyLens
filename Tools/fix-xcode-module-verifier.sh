@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Desliga Module Verifier no projeto Xcode gerado e trava o pbxproj
-# para o Xcode não reescrever ENABLE_MODULE_VERIFIER=YES ao salvar.
+# Desliga Module Verifier e trava o pbxproj para o Xcode não reescrever YES.
+# Uso: ./Tools/fix-xcode-module-verifier.sh
+#      NO_OPEN=1 ./Tools/fix-xcode-module-verifier.sh   # só patch, sem abrir o Xcode
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PBX="$ROOT/Builds/Unity-iPhone.xcodeproj/project.pbxproj"
@@ -10,10 +11,14 @@ if [[ ! -f "$PBX" ]]; then
   exit 1
 fi
 
+# Mata o Xcode de verdade — quit via AppleScript às vezes deixa processo zumbi com o projeto em memória.
 osascript -e 'tell application "Xcode" to quit' >/dev/null 2>&1 || true
+sleep 1
+killall Xcode 2>/dev/null || true
 sleep 1
 
 chflags nouchg "$PBX" 2>/dev/null || true
+chmod u+w "$PBX" 2>/dev/null || true
 
 python3 - <<'PY' "$PBX"
 import re, sys
@@ -45,8 +50,14 @@ if yes:
     sys.exit(2)
 PY
 
+# uchg + só leitura: o Xcode não consegue gravar YES de volta no disco.
+chmod a-w "$PBX"
 chflags uchg "$PBX"
 rm -rf "${HOME}/Library/Developer/Xcode/DerivedData/Unity-iPhone-"*
-echo "pbxproj travado (uchg). DerivedData limpo."
-open "$ROOT/Builds/Unity-iPhone.xcodeproj"
-echo "Xcode aberto. Clean (⇧⌘K) e Run. Se pedir para salvar o projeto: Don't Save."
+echo "pbxproj travado (uchg + a-w). DerivedData limpo."
+
+if [[ "${NO_OPEN:-0}" != "1" ]]; then
+  open "$ROOT/Builds/Unity-iPhone.xcodeproj"
+  echo "Xcode aberto. Clean (⇧⌘K) e Run."
+  echo "Se pedir para salvar o projeto: Don't Save / Revert."
+fi

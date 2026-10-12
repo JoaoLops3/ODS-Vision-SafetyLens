@@ -51,6 +51,12 @@ namespace Facens.SafetyLens.Editor
 
             var report = ForcePbxFlagsOff(pbxPath);
             LockPbx(pbxPath);
+
+            // Segunda passada via shell: mata qualquer YES residual e reforça uchg+a-w.
+            var fixScript = Path.GetFullPath("Tools/fix-xcode-module-verifier.sh");
+            if (File.Exists(fixScript))
+                RunShell("NO_OPEN=1", fixScript);
+
             Debug.Log($"[SafetyLens] PostProcess iOS: {report} (pbxproj travado contra rewrite do Xcode)");
         }
 
@@ -170,6 +176,8 @@ namespace Facens.SafetyLens.Editor
         {
             if (!File.Exists(pbxPath)) return;
             RunChflags("nouchg", pbxPath);
+            try { File.SetAttributes(pbxPath, File.GetAttributes(pbxPath) & ~FileAttributes.ReadOnly); }
+            catch (Exception ex) { Debug.LogWarning($"[SafetyLens] unlock attrs: {ex.Message}"); }
         }
 
         /// <summary>
@@ -179,6 +187,8 @@ namespace Facens.SafetyLens.Editor
         public static void LockPbx(string pbxPath)
         {
             if (!File.Exists(pbxPath)) return;
+            try { File.SetAttributes(pbxPath, File.GetAttributes(pbxPath) | FileAttributes.ReadOnly); }
+            catch (Exception ex) { Debug.LogWarning($"[SafetyLens] lock attrs: {ex.Message}"); }
             RunChflags("uchg", pbxPath);
         }
 
@@ -199,6 +209,33 @@ namespace Facens.SafetyLens.Editor
             catch (Exception ex)
             {
                 Debug.LogWarning($"[SafetyLens] chflags {flag} falhou: {ex.Message}");
+            }
+        }
+
+        static void RunShell(string envPrefix, string scriptPath)
+        {
+            try
+            {
+                using var p = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    Arguments = $"-lc '{envPrefix} \"{scriptPath}\"'",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                });
+                if (p == null) return;
+                var stdout = p.StandardOutput.ReadToEnd();
+                var stderr = p.StandardError.ReadToEnd();
+                p.WaitForExit(60000);
+                if (!string.IsNullOrWhiteSpace(stdout)) Debug.Log($"[SafetyLens] fix-script: {stdout.Trim()}");
+                if (p.ExitCode != 0)
+                    Debug.LogWarning($"[SafetyLens] fix-script exit={p.ExitCode}: {stderr}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[SafetyLens] fix-script falhou: {ex.Message}");
             }
         }
     }

@@ -40,8 +40,12 @@ namespace Facens.SafetyLens
         public float y;
         public float z;
 
-        /// <summary>Ponto de apoio do objeto sobre o plano do marcador.</summary>
-        public Vector3 LocalPosition => new Vector3(x, y, z);
+        /// <summary>
+        /// Posição no plano de leitura (de frente para a câmera). O +Z do conteúdo aponta para a
+        /// câmera, então o +X local aparece à esquerda na tela — por isso o X do JSON é negado:
+        /// x positivo = direita na tela, x negativo = esquerda. Y = cima/baixo.
+        /// </summary>
+        public Vector3 LocalPosition => new Vector3(-x, y, 0f);
         public bool IsAlert => string.Equals(kind, "alert", StringComparison.OrdinalIgnoreCase);
         public bool IsEpi => string.Equals(kind, "epi", StringComparison.OrdinalIgnoreCase);
 

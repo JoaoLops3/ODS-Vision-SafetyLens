@@ -10,9 +10,9 @@
       "kind": "alert",
       "instruction": "Toque na placa de alerta: superfície quente / risco de queimadura.",
       "pictogram": "hot",
-      "x": -0.052,
+      "x": -0.14,
       "y": 0.0,
-      "z": -0.01
+      "z": 0.0
     },
     {
       "id": "PINCH",
@@ -22,7 +22,7 @@
       "pictogram": "pinch",
       "x": 0.0,
       "y": 0.0,
-      "z": -0.01
+      "z": 0.0
     },
     {
       "id": "EPI",
@@ -30,9 +30,9 @@
       "kind": "epi",
       "instruction": "Confirme o EPI obrigatório: capacete de segurança.",
       "model": "helmet",
-      "x": 0.052,
+      "x": 0.14,
       "y": 0.0,
-      "z": -0.01
+      "z": 0.0
     }
   ],
   "quiz": [

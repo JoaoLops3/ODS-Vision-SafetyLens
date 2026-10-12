@@ -43,8 +43,8 @@ MonoBehaviour:
   m_Name: iPhone Providers
   m_EditorClassIdentifier: Unity.XR.Management::UnityEngine.XR.Management.XRManagerSettings
   m_RequiresSettingsUpdate: 0
-  m_AutomaticLoading: 0
-  m_AutomaticRunning: 0
+  m_AutomaticLoading: 1
+  m_AutomaticRunning: 1
   m_Loaders:
   - {fileID: 11400000, guid: 265d7619e347c4886813ca894f85b1d1, type: 2}
 --- !u!114 &6084515064116227280

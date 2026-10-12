@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -22,6 +23,7 @@ namespace Facens.SafetyLens
 
         ARTrackedImageManager _imageManager;
         ARSession _arSession;
+        Camera _arCamera;
         SafetyLensScenario _scenario;
         GameObject _contentRoot;
         ARTrackedImage _trackedImage;
@@ -102,13 +104,46 @@ namespace Facens.SafetyLens
 
         /// <summary>
         /// A câmera só liga quando o participante pede (botão "Abrir câmera") e desliga
-        /// fora das etapas de RA: evita o indicador de câmera ativo sem motivo e poupa bateria.
-        /// O GameObject do ARSession começa inativo na cena (ver SafetyLensProjectSetup).
+        /// fora das etapas de RA. O GO do ARSession começa inativo na cena.
+        /// No iOS o ARCameraBackground configura clearFlags sozinho (BeforeOpaques) —
+        /// não forçamos SolidColor/AfterOpaques depois, senão o feed vira preto.
         /// </summary>
         void SetCameraActive(bool active)
         {
             if (_arSession.gameObject.activeSelf != active)
                 _arSession.gameObject.SetActive(active);
+
+            if (active)
+                StartCoroutine(RecoverArCameraBackground());
+        }
+
+        IEnumerator RecoverArCameraBackground()
+        {
+            var manager = FindFirstObjectByType<ARCameraManager>(FindObjectsInactive.Include);
+            var background = FindFirstObjectByType<ARCameraBackground>(FindObjectsInactive.Include);
+
+            // BeforeOpaques: blit do feed antes da geometria — placas AlphaTest e capacete
+            // não competem com o fullscreen do AfterOpaques.
+            if (manager != null)
+            {
+                manager.requestedBackgroundRenderingMode = CameraBackgroundRenderingMode.BeforeOpaques;
+                manager.enabled = true;
+            }
+
+            // Espera a sessão sair de None (frame único não basta no cold start iOS).
+            const float timeout = 3f;
+            var started = Time.realtimeSinceStartup;
+            while (ARSession.state == ARSessionState.None
+                   && Time.realtimeSinceStartup - started < timeout)
+                yield return null;
+
+            if (background != null)
+            {
+                background.enabled = false;
+                yield return null;
+                background.enabled = true;
+            }
+            // Não tocar em cam.clearFlags: o ARCameraBackground manda nisso.
         }
 
         /// <summary>Mantém só caracteres seguros para nome de arquivo e CSV.</summary>
@@ -132,8 +167,19 @@ namespace Facens.SafetyLens
             FeedbackAt = Time.realtimeSinceStartup;
         }
 
-        void OnEnable() => _imageManager.trackablesChanged.AddListener(OnTrackedImagesChanged);
-        void OnDisable() => _imageManager.trackablesChanged.RemoveListener(OnTrackedImagesChanged);
+        void OnEnable()
+        {
+            _imageManager.trackablesChanged.AddListener(OnTrackedImagesChanged);
+            // A pose ARKit/ARPoseDriver costuma fechar em onBeforeRender — depois do LateUpdate.
+            // Alinhar aqui evita a fileira "de lado" (conteúdo com pose velha da câmera).
+            Application.onBeforeRender += AlignContentToViewer;
+        }
+
+        void OnDisable()
+        {
+            _imageManager.trackablesChanged.RemoveListener(OnTrackedImagesChanged);
+            Application.onBeforeRender -= AlignContentToViewer;
+        }
 
         void LoadScenario()
         {
@@ -197,10 +243,23 @@ namespace Facens.SafetyLens
             }
         }
 
+        float _lastPoseLogAt = -1f;
+
         void HandleTrackedImage(ARTrackedImage image)
         {
             if (image.referenceImage.name != _scenario.targetName) return;
             var tracking = image.trackingState == TrackingState.Tracking;
+
+            // DIAGNÓSTICO TEMPORÁRIO: confirma se o ARKit está mesmo remitindo uma pose nova
+            // a cada atualização, ou se a posição reportada fica parada enquanto o celular se move.
+            // Remover depois de confirmar a causa do "objeto estático, só o texto gira".
+            if (Time.realtimeSinceStartup - _lastPoseLogAt > 0.2f)
+            {
+                _lastPoseLogAt = Time.realtimeSinceStartup;
+                var p = image.transform.position;
+                Debug.Log($"[SafetyLens][POSE] tracking={image.trackingState} pos=({p.x:F3},{p.y:F3},{p.z:F3})");
+            }
+
             SetTargetFound(tracking, image);
         }
 
@@ -247,30 +306,59 @@ namespace Facens.SafetyLens
                 created = true;
             }
 
-            if (_contentRoot.transform.parent != target)
-                _contentRoot.transform.SetParent(target, false);
-            _contentRoot.transform.localPosition = Vector3.zero;
-            // Sem realinhamento por gravidade: o conteúdo usa os eixos nativos do próprio
-            // ARTrackedImage (Y = normal, X = direita da imagem, Z = topo da imagem, conforme a
-            // Reference Image Library). Reorientar por gravidade era o que deixava a fileira torta
-            // sempre que o celular estava um pouco inclinado ao escanear.
-            _contentRoot.transform.localRotation = Quaternion.identity;
-
             if (created)
-                MountVisuals(target);
+            {
+                foreach (var visual in _visuals.Values)
+                    SafetyLensArVisuals.ApplyMounting(visual);
+            }
+
+            AlignContentToViewer();
             RefreshVisuals();
         }
 
-        /// <summary>
-        /// Decide só a pose do capacete (deitado se o marcador está na mesa, em pé se está na
-        /// parede/tela) comparando a normal do marcador com a gravidade. Isso NÃO gira o
-        /// _contentRoot — cada item continua no referencial nativo do marcador.
-        /// </summary>
-        void MountVisuals(Transform target)
+        Camera ResolveArCamera()
         {
-            var isVertical = Mathf.Abs(Vector3.Dot(target.up, Vector3.up)) < SafetyLensTheme.ArVerticalMarkerDot;
-            foreach (var visual in _visuals.Values)
-                SafetyLensArVisuals.ApplyMounting(visual, isVertical);
+            if (_arCamera != null) return _arCamera;
+
+            var manager = FindFirstObjectByType<ARCameraManager>(FindObjectsInactive.Include);
+            if (manager != null)
+                _arCamera = manager.GetComponent<Camera>();
+            if (_arCamera == null)
+                _arCamera = Camera.main;
+            return _arCamera;
+        }
+
+        /// <summary>
+        /// Fileira filha da câmera AR: sempre no centro do frame e de frente para a tela.
+        /// O marcador só libera a exibição e sugere a distância — nunca a orientação.
+        /// </summary>
+        void AlignContentToViewer()
+        {
+            if (_contentRoot == null || !TargetFound) return;
+
+            var cam = ResolveArCamera();
+            if (cam == null) return;
+
+            var camTransform = cam.transform;
+            if (_contentRoot.transform.parent != camTransform)
+                _contentRoot.transform.SetParent(camTransform, false);
+
+            var distance = SafetyLensTheme.ArViewerMinDistance;
+            if (_trackedImage != null)
+            {
+                distance = Mathf.Clamp(
+                    Vector3.Distance(camTransform.position, _trackedImage.transform.position),
+                    SafetyLensTheme.ArViewerMinDistance,
+                    SafetyLensTheme.ArViewerMaxDistance);
+            }
+
+            // local +Z = frente da câmera; 180° em Y faz o +Z do conteúdo apontar para o usuário.
+            _contentRoot.transform.localPosition = new Vector3(
+                0f,
+                SafetyLensTheme.ArViewerScreenLift,
+                distance);
+            _contentRoot.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            _contentRoot.transform.localScale = Vector3.one;
         }
 
         void Update()
@@ -281,7 +369,7 @@ namespace Facens.SafetyLens
             if (touch.phase != TouchPhase.Ended || SafetyLensStatusOverlay.IsTouchOverOverlay(touch.position))
                 return;
 
-            var camera = Camera.main;
+            var camera = ResolveArCamera();
             if (camera == null) return;
 
             var tag = PickHazard(camera, touch.position);
@@ -580,8 +668,8 @@ namespace Facens.SafetyLens
 
                 if (visual.Material != null)
                 {
-                    // Standard (capacete) não é transparente: ignora o alpha do tint.
-                    if (hazard.IsEpi) tint.a = 1f;
+                    // Cutout/Standard usam o alpha da textura ou são opacos — tint só no RGB.
+                    tint.a = 1f;
                     visual.Material.color = hazard.IsEpi ? SafetyLensTheme.HelmetBase * tint : tint;
                 }
 
@@ -598,10 +686,11 @@ namespace Facens.SafetyLens
             }
         }
 
-        /// <summary>Pulso discreto no anel do item ativo: diz "é este" sem competir com o pictograma.</summary>
+        /// <summary>Pulso no anel do item ativo. Pose da fileira: <see cref="AlignContentToViewer"/> em onBeforeRender.</summary>
         void LateUpdate()
         {
             if (Phase != AppPhase.RiskInspection || _visuals.Count == 0) return;
+
             var current = CurrentHazard;
             if (current == null || !_visuals.TryGetValue(current.id, out var visual) || visual.Ring == null) return;
             if (!visual.Ring.gameObject.activeSelf) return;

@@ -31,13 +31,14 @@ namespace Facens.SafetyLens
     }
 
     /// <summary>
-    /// Fábrica dos visuais de RA. Placas ficam como adesivos no plano do marcador (sempre
-    /// legíveis de frente); o capacete é o volume 3D. Materiais em Resources para o build.
+    /// Fábrica dos visuais de RA. Placas e capacete ficam no plano de leitura (de frente para a
+    /// câmera); o SessionController ancora esse plano na posição do marcador. Materiais em Resources.
     /// </summary>
     public static class SafetyLensArVisuals
     {
         public const string ModelHelmet = "helmet";
 
+        public const string SignShader = "SafetyLens/SignUnlit";
         public const string TransparentShader = "Sprites/Default";
         public const string LitShader = "Standard";
         public const string FallbackShader = "Unlit/Color";
@@ -71,35 +72,24 @@ namespace Facens.SafetyLens
         }
 
         /// <summary>
-        /// O conteúdo usa Y = normal do marcador e Z = "para cima" visível. Marcador deitado: o capacete
-        /// fica apoiado (Y para cima). Marcador em pé (tela/parede): o capacete gira para ficar de pé no
-        /// mundo, com a frente para quem olha, e sai do plano o suficiente para não "afundar" na tela.
+        /// Capacete em pé no plano de leitura (Y = cima da tela). O _contentRoot já aponta +Z
+        /// para a câmera, então não precisamos mais distinguir marcador deitado vs. em pé.
         /// </summary>
-        public static void ApplyMounting(SafetyLensHazardVisual visual, bool markerIsVertical)
+        public static void ApplyMounting(SafetyLensHazardVisual visual, bool markerIsVertical = false)
         {
             if (!visual.IsModel || visual.Body == null) return;
-
-            if (markerIsVertical)
-            {
-                visual.Body.localRotation = Quaternion.LookRotation(Vector3.up, Vector3.forward);
-                visual.Body.localPosition = new Vector3(0f, visual.ModelSize.z * 0.5f, -visual.ModelSize.y * 0.5f);
-            }
-            else
-            {
-                visual.Body.localRotation = Quaternion.identity;
-                visual.Body.localPosition = Vector3.zero;
-            }
+            // Capacete de frente para a tela (o mesh do FBX nasce de três quartos).
+            visual.Body.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            visual.Body.localPosition = Vector3.zero;
         }
 
         /// <summary>
-        /// Placa colada no plano do marcador (eixo Y do tracked image = normal).
-        /// Sem billboard: de frente para o equipamento a placa é um adesivo legível;
-        /// o modo "em pé + yawOnly" degenerava e deixava tudo de lado.
+        /// Placa no plano da tela: quad nativo (XY, olhando +Z). O _contentRoot gira para a
+        /// câmera, então a placa fica legível de frente — sem deitar no plano do marcador.
         /// </summary>
         static void BuildSign(SafetyLensHazard hazard, SafetyLensHazardVisual visual)
         {
             var width = SafetyLensTheme.ArSignWidth;
-            var lift = SafetyLensTheme.ArSignLift;
 
             var body = new GameObject("Sign");
             body.transform.SetParent(visual.Root, false);
@@ -108,17 +98,18 @@ namespace Facens.SafetyLens
             quad.name = "Face";
             Object.Destroy(quad.GetComponent<Collider>());
             quad.transform.SetParent(body.transform, false);
-            // Quad nativo está no plano XY olhando +Z; +90° em X deita no plano XZ olhando +Y (normal do marcador).
-            quad.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            quad.transform.localPosition = new Vector3(0f, lift, 0f);
+            quad.transform.localRotation = Quaternion.identity;
+            quad.transform.localPosition = Vector3.zero;
             quad.transform.localScale = new Vector3(width, width, 1f);
 
             var collider = body.AddComponent<BoxCollider>();
-            collider.center = new Vector3(0f, lift, 0f);
-            collider.size = new Vector3(width, Mathf.Max(0.008f, lift * 2f), width);
+            collider.center = Vector3.zero;
+            collider.size = new Vector3(width, width, Mathf.Max(0.008f, SafetyLensTheme.ArSignLift * 2f));
 
-            var material = Instantiate(SignMaterialPath, TransparentShader);
+            // Cutout double-sided: Sprites/Default em MeshRenderer some com frequência no Metal/ARKit.
+            var material = Instantiate(SignMaterialPath, SignShader);
             material.mainTexture = SafetyLensPictograms.GetSign(hazard.ResolvedPictogram);
+            if (material.HasProperty("_Cutoff")) material.SetFloat("_Cutoff", 0.15f);
             var renderer = quad.GetComponent<Renderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -150,6 +141,9 @@ namespace Facens.SafetyLens
 
             body.name = "Model";
             body.transform.SetParent(visual.Root, false);
+            // FBX do capacete traz Camera/Light do Blender; se ficarem ativos, passam a
+            // renderizar a cena (fundo azul + vista torta) por cima da Main Camera AR.
+            StripImportedSceneGadgets(body);
 
             var material = Instantiate(HelmetMaterialPath, LitShader);
             material.color = SafetyLensTheme.HelmetBase;
@@ -184,15 +178,15 @@ namespace Facens.SafetyLens
                 : Vector3.one * SafetyLensTheme.ArHelmetWidth * 0.6f;
         }
 
-        /// <summary>Anel no plano do marcador: indica "é este" sem cobrir o pictograma.</summary>
+        /// <summary>Anel no mesmo plano da placa (de frente para a câmera).</summary>
         static void BuildRing(SafetyLensHazard hazard, SafetyLensHazardVisual visual)
         {
             var ring = GameObject.CreatePrimitive(PrimitiveType.Quad);
             ring.name = "Ring";
             Object.Destroy(ring.GetComponent<Collider>());
             ring.transform.SetParent(visual.Root, false);
-            ring.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            ring.transform.localPosition = new Vector3(0f, SafetyLensTheme.ArRingLift, 0f);
+            ring.transform.localRotation = Quaternion.identity;
+            ring.transform.localPosition = new Vector3(0f, 0f, -SafetyLensTheme.ArRingLift);
             ring.transform.localScale = Vector3.one * SafetyLensTheme.ArRingDiameter;
 
             var material = Instantiate(RingMaterialPath, TransparentShader);
@@ -253,13 +247,57 @@ namespace Facens.SafetyLens
         static Material Instantiate(string resourcePath, string fallbackShader)
         {
             var template = Resources.Load<Material>(resourcePath);
-            if (template != null) return new Material(template);
+            if (template != null)
+            {
+                var copy = new Material(template);
+                // Garante o shader cutout mesmo se o .mat no Resources ainda apontar para Sprites/Default.
+                if (fallbackShader == SignShader)
+                {
+                    var sign = Shader.Find(SignShader);
+                    if (sign != null) copy.shader = sign;
+                }
+                return copy;
+            }
 
             Debug.LogWarning($"[SafetyLens] Material '{resourcePath}' ausente; rode SafetyLens > Configurar projeto completo.");
             var shader = Shader.Find(fallbackShader);
+            if (shader == null) shader = Shader.Find("Unlit/Transparent Cutout");
             if (shader == null) shader = Shader.Find("Sprites/Default");
             if (shader == null) shader = Shader.Find("Hidden/InternalErrorShader");
             return new Material(shader);
+        }
+
+        /// <summary>
+        /// Remove componentes de cena embutidos no FBX (Camera, Light, AudioListener).
+        /// DestroyImmediate no Editor; Destroy em runtime.
+        /// </summary>
+        public static void StripImportedSceneGadgets(GameObject root)
+        {
+            if (root == null) return;
+
+            foreach (var cam in root.GetComponentsInChildren<Camera>(true))
+            {
+                Debug.LogWarning($"[SafetyLens] Removendo Camera importada '{cam.name}' do modelo 3D.");
+                // Destroy é adiado — desliga já para não renderizar nem um frame.
+                cam.enabled = false;
+                var go = cam.gameObject;
+                var onlyGadget = go.GetComponent<Renderer>() == null && go.GetComponent<MeshFilter>() == null;
+                if (onlyGadget) DestroyObject(go);
+                else DestroyObject(cam);
+            }
+
+            foreach (var light in root.GetComponentsInChildren<Light>(true))
+            {
+                light.enabled = false;
+                DestroyObject(light);
+            }
+        }
+
+        static void DestroyObject(Object obj)
+        {
+            if (obj == null) return;
+            if (Application.isPlaying) Object.Destroy(obj);
+            else Object.DestroyImmediate(obj);
         }
     }
 }

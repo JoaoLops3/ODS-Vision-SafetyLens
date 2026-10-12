@@ -24,7 +24,8 @@ namespace Facens.SafetyLens.Editor
         public static void EnsureAll(string scenePath)
         {
             EnsureMaterials();
-            EnsureHelmetPrefab(false);
+            // Regenera: ArHelmetWidth muda com o layout HUD e o FBX não pode ficar com tamanho velho.
+            EnsureHelmetPrefab(true);
             EnsureSceneLighting(scenePath);
         }
 
@@ -40,9 +41,10 @@ namespace Facens.SafetyLens.Editor
         {
             Directory.CreateDirectory(MaterialsFolder);
 
-            EnsureMaterial(SafetyLensArVisuals.SignMaterialPath, SafetyLensArVisuals.TransparentShader, m =>
+            EnsureMaterial(SafetyLensArVisuals.SignMaterialPath, SafetyLensArVisuals.SignShader, m =>
             {
                 m.color = Color.white;
+                if (m.HasProperty("_Cutoff")) m.SetFloat("_Cutoff", 0.15f);
             });
             EnsureMaterial(SafetyLensArVisuals.RingMaterialPath, SafetyLensArVisuals.TransparentShader, m =>
             {
@@ -94,7 +96,20 @@ namespace Facens.SafetyLens.Editor
         /// </summary>
         public static void EnsureHelmetPrefab(bool force)
         {
-            if (!force && AssetDatabase.LoadAssetAtPath<GameObject>(HelmetPrefabAssetPath) != null) return;
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(HelmetPrefabAssetPath);
+            if (!force && existing != null)
+            {
+                // Prefab antigo pode ter vindo com Camera do Blender — limpa sem regenerar o mesh.
+                if (existing.GetComponentInChildren<Camera>(true) != null)
+                {
+                    var instance = (GameObject)PrefabUtility.InstantiatePrefab(existing);
+                    SafetyLensArVisuals.StripImportedSceneGadgets(instance);
+                    PrefabUtility.SaveAsPrefabAsset(instance, HelmetPrefabAssetPath);
+                    Object.DestroyImmediate(instance);
+                    Debug.Log("[SafetyLens] Camera/Light importados removidos do prefab do capacete.");
+                }
+                return;
+            }
 
             var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(HelmetFbxPath);
             if (fbx == null)
@@ -115,6 +130,8 @@ namespace Facens.SafetyLens.Editor
                 model.transform.localPosition = Vector3.zero;
                 model.transform.localRotation = Quaternion.identity;
                 model.transform.localScale = Vector3.one;
+                // Camera/Light do Blender no FBX quebram a vista AR se entrarem no prefab.
+                SafetyLensArVisuals.StripImportedSceneGadgets(model);
 
                 var renderers = model.GetComponentsInChildren<Renderer>(true);
                 if (renderers.Length == 0)
@@ -156,8 +173,8 @@ namespace Facens.SafetyLens.Editor
                     r.reflectionProbeUsage = ReflectionProbeUsage.Off;
                 }
 
-                foreach (var existing in root.GetComponentsInChildren<Collider>(true))
-                    Object.DestroyImmediate(existing);
+                foreach (var oldCollider in root.GetComponentsInChildren<Collider>(true))
+                    Object.DestroyImmediate(oldCollider);
 
                 var size = bounds.size * scale;
                 var collider = root.AddComponent<BoxCollider>();

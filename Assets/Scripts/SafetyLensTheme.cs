@@ -52,11 +52,11 @@ namespace Facens.SafetyLens
         public static readonly Color HazardTintDone = new Color(0.86f, 0.86f, 0.86f, 1f);
         public static readonly Color HelmetBase = Brand;
 
-        /// <summary>Dimensões dos objetos de RA em metros (marcador de 20 x 13 cm).</summary>
-        public const float ArSignWidth = 0.04f;
+        /// <summary>Dimensões dos objetos de RA em metros (fileira HUD à frente da câmera).</summary>
+        public const float ArSignWidth = 0.10f;
         public const float ArSignLift = 0.003f;
-        public const float ArHelmetWidth = 0.042f;
-        public const float ArRingDiameter = 0.056f;
+        public const float ArHelmetWidth = 0.09f;
+        public const float ArRingDiameter = 0.13f;
         public const float ArRingLift = 0.001f;
         public const float ArDoneRingScale = 0.85f;
         public const float ArLabelGap = 0.005f;
@@ -68,6 +68,13 @@ namespace Facens.SafetyLens
         public const float ArPulseSpeed = 2.4f;
         /// <summary>|normal·up| abaixo disso = marcador em pé (tela, parede, máquina).</summary>
         public const float ArVerticalMarkerDot = 0.6f;
+        /// <summary>
+        /// Filho da câmera AR: fica no centro do frame. Distância local Z (m) até o plano da fileira.
+        /// </summary>
+        public const float ArViewerMinDistance = 0.55f;
+        public const float ArViewerMaxDistance = 0.75f;
+        /// <summary>Sobe o plano na tela para não ficar atrás do card inferior da UI.</summary>
+        public const float ArViewerScreenLift = 0.08f;
 
         public const float SpaceXs = 4f;
         public const float SpaceSm = 8f;

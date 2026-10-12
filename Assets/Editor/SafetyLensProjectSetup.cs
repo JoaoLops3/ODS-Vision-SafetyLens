@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEditor;
@@ -11,6 +12,7 @@ using UnityEditor.XR.Management;
 using UnityEditor.XR.Management.Metadata;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 using UnityEngine.XR.Management;
@@ -27,6 +29,17 @@ namespace Facens.SafetyLens.Editor
         const string LibraryPath = "Assets/ReferenceImages/SafetyLensReferenceImageLibrary.asset";
         const string TargetName = "SafetyLensEquipmentTarget";
         const string SetupFlag = "Facens.SafetyLens.SetupComplete.v1";
+
+        static readonly string[] ArBackgroundShaders =
+        {
+            "Unlit/ARKitBackground",
+            "Unlit/ARKitBackground/AfterOpaques",
+            "Unlit/ARCoreBackground",
+            "Unlit/ARCoreBackground/AfterOpaques",
+            "SafetyLens/SignUnlit",
+            "Sprites/Default",
+            "Unlit/Transparent Cutout",
+        };
 
         static SafetyLensProjectSetup() => EditorApplication.delayCall += AutoSetup;
 
@@ -49,6 +62,7 @@ namespace Facens.SafetyLens.Editor
         {
             ConfigureAndroid();
             ConfigureIos();
+            EnsureArBackgroundShadersIncluded();
             var library = EnsureImageLibrary();
             EnsureScene(library, false);
             SafetyLensVisualAssetsSetup.EnsureAll(ScenePath);
@@ -70,6 +84,8 @@ namespace Facens.SafetyLens.Editor
             errors += RequireObject<ARCameraManager>("ARCameraManager");
             errors += RequireObject<ARCameraBackground>("ARCameraBackground");
             errors += RequireObject<SafetyLensStatusOverlay>("SafetyLensStatusOverlay");
+            errors += RequireCameraClearFlags();
+            errors += RequireSingleArCamera();
 
             var manager = UnityEngine.Object.FindFirstObjectByType<ARTrackedImageManager>();
             if (manager == null || manager.referenceLibrary == null || manager.referenceLibrary.count != 1)
@@ -113,6 +129,92 @@ namespace Facens.SafetyLens.Editor
             if (UnityEngine.Object.FindFirstObjectByType<T>(FindObjectsInactive.Include) != null) return 0;
             Debug.LogError($"[SafetyLens] Componente ausente: {label}");
             return 1;
+        }
+
+        /// <summary>
+        /// EnsureScene só configura o Clear Flags da Main Camera na PRIMEIRA vez que a cena é criada.
+        /// Se ele for alterado depois, a câmera mostra o Skybox padrão (céu degradê) quando o
+        /// ARCameraBackground não cobre o frame. Corrige automaticamente aqui.
+        /// </summary>
+        static int RequireCameraClearFlags()
+        {
+            var camera = UnityEngine.Object.FindFirstObjectByType<Camera>(FindObjectsInactive.Include);
+            if (camera == null)
+            {
+                Debug.LogError("[SafetyLens] Main Camera ausente na cena.");
+                return 1;
+            }
+
+            var dirty = false;
+            if (camera.clearFlags != CameraClearFlags.SolidColor || camera.backgroundColor != Color.black)
+            {
+                Debug.LogWarning(
+                    $"[SafetyLens] Main Camera.clearFlags estava '{camera.clearFlags}' (esperado SolidColor + preto). " +
+                    "Isso deixa o Skybox padrão visível sempre que o ARCameraBackground não cobre o frame. Corrigindo.");
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = Color.black;
+                EditorUtility.SetDirty(camera);
+                dirty = true;
+            }
+
+            // Skybox no RenderSettings ainda “vaza” se algo voltar Clear Flags para Skybox.
+            if (RenderSettings.skybox != null)
+            {
+                Debug.LogWarning("[SafetyLens] Removendo Skybox do RenderSettings (evita céu degradê no iPhone).");
+                RenderSettings.skybox = null;
+                dirty = true;
+            }
+
+            if (dirty)
+            {
+                EditorSceneManager.MarkSceneDirty(camera.gameObject.scene);
+                EditorSceneManager.SaveScene(camera.gameObject.scene);
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Sem esses shaders no Always Included, o IL2CPP stripa o material do ARCameraBackground
+        /// e o feed da câmera some — sobra o clear/skybox, exatamente o "degradê" no reconhecimento.
+        /// </summary>
+        static void EnsureArBackgroundShadersIncluded()
+        {
+            var graphics = AssetDatabase.LoadAssetAtPath<GraphicsSettings>("ProjectSettings/GraphicsSettings.asset");
+            if (graphics == null) return;
+
+            var so = new SerializedObject(graphics);
+            var list = so.FindProperty("m_AlwaysIncludedShaders");
+            if (list == null) return;
+
+            var present = new HashSet<string>();
+            for (var i = 0; i < list.arraySize; i++)
+            {
+                var shader = list.GetArrayElementAtIndex(i).objectReferenceValue as Shader;
+                if (shader != null) present.Add(shader.name);
+            }
+
+            var added = 0;
+            foreach (var name in ArBackgroundShaders)
+            {
+                if (present.Contains(name)) continue;
+                var shader = Shader.Find(name);
+                if (shader == null)
+                {
+                    Debug.LogWarning($"[SafetyLens] Shader AR de fundo nao encontrado: {name}");
+                    continue;
+                }
+
+                list.InsertArrayElementAtIndex(list.arraySize);
+                list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = shader;
+                added++;
+            }
+
+            if (added > 0)
+            {
+                so.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(graphics);
+                Debug.Log($"[SafetyLens] {added} shader(s) de fundo AR incluidos em Always Included Shaders.");
+            }
         }
 
         [MenuItem("SafetyLens/Build Android APK")]
@@ -264,6 +366,11 @@ namespace Facens.SafetyLens.Editor
             // Obrigatorio para ARKit / App Store privacy (camera).
             PlayerSettings.iOS.cameraUsageDescription =
                 "O SafetyLens usa a camera para Realidade Aumentada e identificacao de riscos industriais.";
+            // ARKitBackground exige Metal; OpenGL no iPhone quebra o feed da câmera.
+            // Automatic=true deixa a lista voltar a incluir APIs que matam o blit ARKit.
+            PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.iOS, false);
+            PlayerSettings.SetGraphicsAPIs(BuildTarget.iOS, new[] { GraphicsDeviceType.Metal });
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.iOS, ScriptingImplementation.IL2CPP);
 
             var perTarget = EnsureXRGeneralSettings();
             if (!perTarget.HasSettingsForBuildTarget(BuildTargetGroup.iOS))
@@ -275,7 +382,12 @@ namespace Facens.SafetyLens.Editor
             if (ios?.AssignedSettings == null) return;
 
             ios.InitManagerOnStart = true;
+            // Sem automatic load/run o ARKit sobe pela metade: sessão “ativa” (ponto verde)
+            // mas ARCameraBackground fica preto.
+            ios.AssignedSettings.automaticLoading = true;
+            ios.AssignedSettings.automaticRunning = true;
             EditorUtility.SetDirty(ios);
+            EditorUtility.SetDirty(ios.AssignedSettings);
             XRPackageMetadataStore.AssignLoader(
                 ios.AssignedSettings,
                 "UnityEngine.XR.ARKit.ARKitLoader",
@@ -318,6 +430,8 @@ namespace Facens.SafetyLens.Editor
             {
                 EnsureSceneInBuildSettings();
                 EnsureArSessionStartsInactive();
+                EnsureCameraClearFlagsInScene();
+                EnsureSceneHasSingleArCamera();
                 return;
             }
 
@@ -360,9 +474,115 @@ namespace Facens.SafetyLens.Editor
             originObject.AddComponent<SafetyLensSessionController>();
             new GameObject("SafetyLens Status Overlay").AddComponent<SafetyLensStatusOverlay>();
 
+            RenderSettings.skybox = null;
+
             EditorSceneManager.SaveScene(scene, ScenePath);
             EnsureSceneInBuildSettings();
             EditorSceneManager.OpenScene(ScenePath);
+        }
+
+        /// <summary>
+        /// Mesma correção de RequireCameraClearFlags, mas abre a cena se necessário
+        /// (usada em ConfigureProject / Build, não só em Validar).
+        /// </summary>
+        static void EnsureCameraClearFlagsInScene()
+        {
+            var active = EditorSceneManager.GetActiveScene();
+            var openedHere = active.path != ScenePath;
+            var scene = openedHere
+                ? EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive)
+                : active;
+
+            if (openedHere) SceneManager.SetActiveScene(scene);
+            RequireCameraClearFlags();
+            if (openedHere)
+            {
+                if (active.IsValid()) SceneManager.SetActiveScene(active);
+                EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        /// <summary>
+        /// O FBX do capacete (e qualquer modelo arrastado pra cena) traz Camera do Blender.
+        /// Uma segunda Camera com SolidColor preto pinta por cima do ARCameraBackground —
+        /// sintoma: ponto verde iOS + tela preta + só o mesh do capacete.
+        /// </summary>
+        static void EnsureSceneHasSingleArCamera()
+        {
+            var active = EditorSceneManager.GetActiveScene();
+            var openedHere = active.path != ScenePath;
+            var scene = openedHere
+                ? EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive)
+                : active;
+
+            if (openedHere) SceneManager.SetActiveScene(scene);
+            RequireSingleArCamera();
+            if (openedHere)
+            {
+                if (active.IsValid()) SceneManager.SetActiveScene(active);
+                EditorSceneManager.CloseScene(scene, true);
+            }
+        }
+
+        static int RequireSingleArCamera()
+        {
+            var cameras = UnityEngine.Object.FindObjectsByType<Camera>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+            var removed = 0;
+            foreach (var cam in cameras)
+            {
+                if (cam == null) continue;
+                if (cam.CompareTag("MainCamera") || cam.GetComponent<ARCameraManager>() != null)
+                    continue;
+
+                Debug.LogWarning(
+                    $"[SafetyLens] Removendo Camera estranha '{GetPath(cam.transform)}' " +
+                    "(FBX/Blender na cena quebra o feed ARKit).");
+                UnityEngine.Object.DestroyImmediate(cam.gameObject);
+                removed++;
+            }
+
+            // Prefab HardHat solto na raiz (sem Camera se importCameras=0) ainda polui a vista.
+            foreach (var root in SceneManager.GetActiveScene().GetRootGameObjects())
+            {
+                if (root == null) continue;
+                var name = root.name;
+                if (!name.StartsWith("HardHat", StringComparison.OrdinalIgnoreCase)
+                    && !name.Equals("Hard Hat", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                Debug.LogWarning($"[SafetyLens] Removendo '{name}' da cena — capacete só existe via Resources em runtime.");
+                UnityEngine.Object.DestroyImmediate(root);
+                removed++;
+            }
+
+            if (removed > 0)
+            {
+                var scene = SceneManager.GetActiveScene();
+                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.SaveScene(scene);
+            }
+
+            cameras = UnityEngine.Object.FindObjectsByType<Camera>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+            if (cameras.Length != 1)
+            {
+                Debug.LogError(
+                    $"[SafetyLens] Esperada 1 Camera (Main Camera AR); encontradas {cameras.Length}.");
+                return 1;
+            }
+            return 0;
+        }
+
+        static string GetPath(Transform t)
+        {
+            var path = t.name;
+            while (t.parent != null)
+            {
+                t = t.parent;
+                path = t.name + "/" + path;
+            }
+            return path;
         }
 
         /// <summary>
