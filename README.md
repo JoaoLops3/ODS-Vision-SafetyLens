@@ -4,7 +4,7 @@
 > Treinamento de segurança e identificação de riscos industriais via smartphone (Image Tracking).
 
 ![Status](https://img.shields.io/badge/status-protótipo%20funcional-success)
-![Plataforma](https://img.shields.io/badge/plataforma-iOS%20(ARKit)%20%7C%20Android%20(ARCore)-blue)
+![Plataforma](<https://img.shields.io/badge/plataforma-iOS%20(ARKit)%20%7C%20Android%20(ARCore)-blue>)
 ![Tecnologia](https://img.shields.io/badge/RA-Image%20Tracking-blue)
 ![Unity](https://img.shields.io/badge/Unity-6000.3.0f1-black)
 
@@ -15,29 +15,29 @@
 
 ## 1. Identificação do Projeto
 
-| Item | Informação |
-|---|---|
-| **Projeto** | SafetyLens (ODS Vision) |
-| **Equipe** | ODS Vision — SafetyLens |
-| **Curso** | Engenharia de Computação |
-| **Disciplina** | UPX — Realidade Aumentada |
-| **Professor** | Prof. Daniel Domingos Akira de Sá Pimentel Ohata |
-| **Semestre** | 2026.2 (8º semestre) |
-| **Instituição** | UniFacens — Sorocaba, SP |
+| Item            | Informação                                       |
+| --------------- | ------------------------------------------------ |
+| **Projeto**     | SafetyLens (ODS Vision)                          |
+| **Equipe**      | ODS Vision — SafetyLens                          |
+| **Curso**       | Engenharia de Computação                         |
+| **Disciplina**  | UPX — Realidade Aumentada                        |
+| **Professor**   | Prof. Daniel Domingos Akira de Sá Pimentel Ohata |
+| **Semestre**    | 2026.2 (8º semestre)                             |
+| **Instituição** | UniFacens — Sorocaba, SP                         |
 
 ### Integrantes
 
-| Nome | RA | E-mail | Responsabilidade |
-|---|---|---|---|
-| Brunno Eduardo Marfil Marins | 236051 | bruno.marfil@hotmail.com | Desenvolvedor AR — integração AR Foundation / marcadores (Image Targets) |
-| Bruno Romi Cervone | 235212 | brunoromicr@gmail.com | Engenharia de Software e testes de usabilidade — testes funcionais, validação da persistência local e protocolo da escala SUS |
-| Giovane Zanzarini Iano | 236082 | giovanezanza@gmail.com | Front-end, UI/UX e Design 3D — telas no Unity, menus do quiz e elementos visuais de risco |
-| Hector Silveira Colchiesqui | 235354 | colchiesquihector@gmail.com | Arquitetura de sistema e modelagem 3D/assets — EPIs, Image Targets e organização das camadas do sistema |
-| João Gabriel Lopes Aguiar | 223969 | joaogabriellops2353@gmail.com | Gestão de projeto e documentação — Kanban/Trello, cronograma ágil, documentação técnica e apoio em interações front-end |
-| Luis Alberto Sant'Anna de Araújo | 236401 | Santannaluis10@gmail.com | Pesquisa científica e análise de dados — métricas (cronometragem, erros) e tratamento estatístico do experimento |
-| Miguel Muran Zvir Novaes | 222674 | muranmiguel@gmail.com | Redação principal e metodologia — fundamentação teórica, delineamento experimental e padronização do artigo |
+| Nome                             | RA     | E-mail                                                                | Responsabilidade                                                                                                              |
+| -------------------------------- | ------ | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Brunno Eduardo Marfil Marins     | 236051 | [bruno.marfil@hotmail.com](mailto:bruno.marfil@hotmail.com)           | Desenvolvedor AR — integração AR Foundation / marcadores (Image Targets)                                                      |
+| Bruno Romi Cervone               | 235212 | [brunoromicr@gmail.com](mailto:brunoromicr@gmail.com)                 | Engenharia de Software e testes de usabilidade — testes funcionais, validação da persistência local e protocolo da escala SUS |
+| Giovane Zanzarini Iano           | 236082 | [giovanezanza@gmail.com](mailto:giovanezanza@gmail.com)               | Front-end, UI/UX e Design 3D — telas no Unity, menus do quiz e elementos visuais de risco                                     |
+| Hector Silveira Colchiesqui      | 235354 | [colchiesquihector@gmail.com](mailto:colchiesquihector@gmail.com)     | Arquitetura de sistema e modelagem 3D/assets — EPIs, Image Targets e organização das camadas do sistema                       |
+| João Gabriel Lopes Aguiar        | 223969 | [joaogabriellops2353@gmail.com](mailto:joaogabriellops2353@gmail.com) | Gestão de projeto e documentação — Kanban/Trello, cronograma ágil, documentação técnica e apoio em interações front-end       |
+| Luis Alberto Sant'Anna de Araújo | 236401 | [Santannaluis10@gmail.com](mailto:Santannaluis10@gmail.com)           | Pesquisa científica e análise de dados — métricas (cronometragem, erros) e tratamento estatístico do experimento              |
+| Miguel Muran Zvir Novaes         | 222674 | [muranmiguel@gmail.com](mailto:muranmiguel@gmail.com)                 | Redação principal e metodologia — fundamentação teórica, delineamento experimental e padronização do artigo                   |
 
-Artigo científico da equipe: [`docs/documents/SafetyLens-Artigo-Cientifico.pdf`](docs/documents/SafetyLens-Artigo-Cientifico.pdf).
+Artigo científico da equipe (sempre a versão atual no SharePoint): [SafetyLens — Artigo científico](https://facens-my.sharepoint.com/:w:/g/personal/223969_facens_br/IQC635MrvwTJQr-ThWC7yNzgAfASb7rOqj2sZgzheg6sdYE?e=UEWZgv).
 
 ### Artigos científicos utilizados como base
 
@@ -46,15 +46,15 @@ Planilha completa (fonte da tabela abaixo):
 - [Excel no SharePoint (Facens)](https://facens-my.sharepoint.com/:x:/g/personal/223969_facens_br/IQD6DAxNHPhGSaIQRpkXLhdFAZtFv9VKDNwsFKHG7cuFfUY?e=43COmv)
 - Cópia no repositório: [`docs/documents/Tabela_Artigos_Cientificos_SafetyLens_UPX8.xlsx`](docs/documents/Tabela_Artigos_Cientificos_SafetyLens_UPX8.xlsx)
 
-| ID | Integrante responsável | Título do artigo | Autores | Ano | Fonte / periódico / evento | Objetivo do estudo | Metodologia | Principais resultados | Limitações apontadas | Contribuição para o SafetyLens (relação com o projeto) |
-|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | João Gabriel | Treinamentos utilizando a Realidade Aumentada e Virtual: comparação da inovação e tradicionalismo na formação profissional | BORGES, P. R. et al. | 2019 | IX CIKI (Congresso Internacional de Conhecimento e Inovação) | Avaliar os impactos do uso de tecnologias imersivas (RA e RV) em treinamentos operacionais e corporativos. | Estudo comparativo e exploratório sobre engajamento e usabilidade em ambientes de formação. | Comprovou aumento significativo no engajamento, na retenção de conteúdo e na segurança operacional. | Custos iniciais de infraestrutura e barreiras técnicas de adoção. | Fundamenta a necessidade de interfaces ativas para treinamento e monitoramento de riscos. |
-| 2 | Brunno Marfil | BIM-based immersive virtual reality for construction workspace planning: a safety-oriented approach | GETULI, V. et al. | 2020 | Automation in Construction | Investigar a integração de ambientes imersivos no planejamento de segurança e prevenção de riscos operacionais. | Estudo experimental aplicado com simulação de cenários de trabalho e medição de tempos de capacitação. | Prevenção orientada à segurança com redução expressiva no tempo de capacitação dos colaboradores. | Foco restrito a espaços de construção fechados e complexidade de integração. | Fornece a base metodológica de métricas para treinamentos imersivos focados em segurança do trabalho. |
-| 3 | Giovane Iano | Uso de realidade virtual e aumentada no ensino de segurança do trabalho na graduação | FAZINGA, W. R.; LUCENA, A. F. E.; SAFFARO, F. A. | 2019 | XI SIBRAGEC (Simpósio Brasileiro de Gestão e Economia da Construção) | Analisar a eficácia do uso de RA e RV na retenção de diretrizes e normas de segurança do trabalho. | Estudo experimental comparativo com aplicação de avaliações práticas antes e após o uso das ferramentas. | Constatação de maior absorção de normas de segurança e aumento na identificação de perigos. | Tempo elevado exigido para modelagem tridimensional prévia dos cenários. | Ampara a substituição dos manuais 2D estáticos por componentes virtuais interativos no SafetyLens. |
-| 4 | Bruno Romi | Arquitetura de sistemas para detecção de perigos com IoT e Realidade Aumentada | MURTA, A.; SILVA, B. | 2024 | XVI SBCUP (Simpósio Brasileiro de Computação Ubíqua e Pervasiva) | Propor aprimoramentos para a segurança na Indústria 4.0 conectando sensores IoT e Realidade Aumentada. | Proposição de arquitetura de software e testes de sistema para emissão de alertas em tempo real. | Emissão contínua de alertas preventivos antes do contato do operador com fontes de risco físico. | Latência de comunicação de rede e complexidade de integração com sensores de campo. | Subsidia a estrutura lógica de disparo de alertas de risco e futuras expansões sensoriais do SafetyLens. |
-| 5 | Hector Colchiesqui | Realidade virtual aplicada à segurança do trabalho na construção civil: uma revisão sistemática da literatura | NETO, L. et al. | 2022 | Revista Educ@ / SciELO | Mapear como as tecnologias virtuais e imersivas estão sendo aplicadas para treinar a percepção de risco ocupacional. | Revisão Sistemática da Literatura (RSL) em bases científicas nacionais e internacionais. | Constatação de que simulações capacitam a percepção de risco sem expor o trabalhador ao perigo físico real. | Dependência de óculos imersivos de alto custo e equipamentos pesados de processamento. | Justifica a escolha técnica do SafetyLens em rodar via smartphones comerciais acessíveis (democratização do acesso). |
-| 6 | Luís Alberto | Usos e benefícios da Realidade Aumentada na Indústria 4.0 | SILVA, M. P. et al. | 2022 | Revista Brasileira de Mecatrônica (v. 4, n. 4) | Investigar as aplicações práticas e ganhos operacionais da sobreposição de informações por RA em ambientes industriais. | Artigo de revisão e estudo de caso aplicado em linhas operacionais assistidas. | Melhorias na precisão de montagem, redução de falhas humanas e suporte em tempo real com mãos livres. | Dependência de conexão de rede estável e curva de adaptação dos operadores à interface. | Fundamenta a sobreposição de instruções de EPIs e alertas de peças móveis diretamente sobre a imagem da máquina. |
-| 7 | Miguel Muran | The application of augmented reality technologies for the improvement of occupational safety in an industrial environment | TATIC, D.; TESIC, B. | 2017 | Computers in Industry (v. 85, p. 1–10) | Investigar empiricamente o impacto da RA na diminuição de erros e velocidade de resposta a riscos industriais. | Estudo experimental com implementação e testes de protótipo de RA em ambiente fabril real. | Comprovação estatística de redução na ocorrência de erros operacionais e aceleração na detecção de zonas de risco. | Restrições de capacidade gráfica dos dispositivos móveis e necessidade de calibrar as interfaces. | Valida internacionalmente a hipótese central do SafetyLens de que a RA mitiga falhas humanas e otimiza o tempo de resposta. |
+| Integrante responsável | Título do artigo                                                                                                           | Autores                                          | Ano  | Fonte / periódico / evento                                           | Objetivo do estudo                                                                                                      | Metodologia                                                                                              | Principais resultados                                                                                              | Limitações apontadas                                                                              | Contribuição para o SafetyLens (relação com o projeto)                                                                      |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ---- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| João Gabriel           | Treinamentos utilizando a Realidade Aumentada e Virtual: comparação da inovação e tradicionalismo na formação profissional | BORGES, P. R. et al.                             | 2019 | IX CIKI (Congresso Internacional de Conhecimento e Inovação)         | Avaliar os impactos do uso de tecnologias imersivas (RA e RV) em treinamentos operacionais e corporativos.              | Estudo comparativo e exploratório sobre engajamento e usabilidade em ambientes de formação.              | Comprovou aumento significativo no engajamento, na retenção de conteúdo e na segurança operacional.                | Custos iniciais de infraestrutura e barreiras técnicas de adoção.                                 | Fundamenta a necessidade de interfaces ativas para treinamento e monitoramento de riscos.                                   |
+| Brunno Marfil          | BIM-based immersive virtual reality for construction workspace planning: a safety-oriented approach                        | GETULI, V. et al.                                | 2020 | Automation in Construction                                           | Investigar a integração de ambientes imersivos no planejamento de segurança e prevenção de riscos operacionais.         | Estudo experimental aplicado com simulação de cenários de trabalho e medição de tempos de capacitação.   | Prevenção orientada à segurança com redução expressiva no tempo de capacitação dos colaboradores.                  | Foco restrito a espaços de construção fechados e complexidade de integração.                      | Fornece a base metodológica de métricas para treinamentos imersivos focados em segurança do trabalho.                       |
+| Giovane Iano           | Uso de realidade virtual e aumentada no ensino de segurança do trabalho na graduação                                       | FAZINGA, W. R.; LUCENA, A. F. E.; SAFFARO, F. A. | 2019 | XI SIBRAGEC (Simpósio Brasileiro de Gestão e Economia da Construção) | Analisar a eficácia do uso de RA e RV na retenção de diretrizes e normas de segurança do trabalho.                      | Estudo experimental comparativo com aplicação de avaliações práticas antes e após o uso das ferramentas. | Constatação de maior absorção de normas de segurança e aumento na identificação de perigos.                        | Tempo elevado exigido para modelagem tridimensional prévia dos cenários.                          | Ampara a substituição dos manuais 2D estáticos por componentes virtuais interativos no SafetyLens.                          |
+| Bruno Romi             | Arquitetura de sistemas para detecção de perigos com IoT e Realidade Aumentada                                             | MURTA, A.; SILVA, B.                             | 2024 | XVI SBCUP (Simpósio Brasileiro de Computação Ubíqua e Pervasiva)     | Propor aprimoramentos para a segurança na Indústria 4.0 conectando sensores IoT e Realidade Aumentada.                  | Proposição de arquitetura de software e testes de sistema para emissão de alertas em tempo real.         | Emissão contínua de alertas preventivos antes do contato do operador com fontes de risco físico.                   | Latência de comunicação de rede e complexidade de integração com sensores de campo.               | Subsidia a estrutura lógica de disparo de alertas de risco e futuras expansões sensoriais do SafetyLens.                    |
+| Hector Colchiesqui     | Realidade virtual aplicada à segurança do trabalho na construção civil: uma revisão sistemática da literatura              | NETO, L. et al.                                  | 2022 | Revista Educ@ / SciELO                                               | Mapear como as tecnologias virtuais e imersivas estão sendo aplicadas para treinar a percepção de risco ocupacional.    | Revisão Sistemática da Literatura (RSL) em bases científicas nacionais e internacionais.                 | Constatação de que simulações capacitam a percepção de risco sem expor o trabalhador ao perigo físico real.        | Dependência de óculos imersivos de alto custo e equipamentos pesados de processamento.            | Justifica a escolha técnica do SafetyLens em rodar via smartphones comerciais acessíveis (democratização do acesso).        |
+| Luís Alberto           | Usos e benefícios da Realidade Aumentada na Indústria 4.0                                                                  | SILVA, M. P. et al.                              | 2022 | Revista Brasileira de Mecatrônica (v. 4, n. 4)                       | Investigar as aplicações práticas e ganhos operacionais da sobreposição de informações por RA em ambientes industriais. | Artigo de revisão e estudo de caso aplicado em linhas operacionais assistidas.                           | Melhorias na precisão de montagem, redução de falhas humanas e suporte em tempo real com mãos livres.              | Dependência de conexão de rede estável e curva de adaptação dos operadores à interface.           | Fundamenta a sobreposição de instruções de EPIs e alertas de peças móveis diretamente sobre a imagem da máquina.            |
+| Miguel Muran           | The application of augmented reality technologies for the improvement of occupational safety in an industrial environment  | TATIC, D.; TESIC, B.                             | 2017 | Computers in Industry (v. 85, p. 1–10)                               | Investigar empiricamente o impacto da RA na diminuição de erros e velocidade de resposta a riscos industriais.          | Estudo experimental com implementação e testes de protótipo de RA em ambiente fabril real.               | Comprovação estatística de redução na ocorrência de erros operacionais e aceleração na detecção de zonas de risco. | Restrições de capacidade gráfica dos dispositivos móveis e necessidade de calibrar as interfaces. | Valida internacionalmente a hipótese central do SafetyLens de que a RA mitiga falhas humanas e otimiza o tempo de resposta. |
 
 ---
 
@@ -102,13 +102,13 @@ Desenvolver e validar um protótipo móvel de Realidade Aumentada (**SafetyLens*
 
 ## 5. Público-Alvo
 
-| Aspecto | Descrição |
-|---|---|
-| **Perfil** | Operadores industriais, técnicos de segurança do trabalho, estudantes de engenharia/formação técnica |
-| **Contexto** | Treinamento / inspeção guiada junto a um equipamento com marcador físico |
-| **Necessidades** | Ver o risco **no lugar** da máquina; registrar desempenho; baixo custo de hardware |
-| **Limitações** | Precisa de smartphone com ARKit ou ARCore; iluminação e visibilidade do marcador |
-| **Familiaridade** | Uso básico de smartphone; instrução inicial em menos de 2 minutos (RNF04 do artigo) |
+| Aspecto           | Descrição                                                                                            |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| **Perfil**        | Operadores industriais, técnicos de segurança do trabalho, estudantes de engenharia/formação técnica |
+| **Contexto**      | Treinamento / inspeção guiada junto a um equipamento com marcador físico                             |
+| **Necessidades**  | Ver o risco **no lugar** da máquina; registrar desempenho; baixo custo de hardware                   |
+| **Limitações**    | Precisa de smartphone com ARKit ou ARCore; iluminação e visibilidade do marcador                     |
+| **Familiaridade** | Uso básico de smartphone; instrução inicial em menos de 2 minutos (RNF04 do artigo)                  |
 
 Materiais complementares (persona, jornada): pasta [`docs/documents/`](docs/documents/).
 
@@ -116,18 +116,18 @@ Materiais complementares (persona, jornada): pasta [`docs/documents/`](docs/docu
 
 ## 6. Funcionalidades
 
-| ID | Funcionalidade | Descrição | Status |
-|---|---|---|---|
-| RF01 | Rastreamento de imagem | Identifica o Image Target (`SafetyLensEquipmentTarget`) via `ARTrackedImageManager` | ✅ |
-| RF02 | Exibição de conteúdo em RA | Placas HOT/PINCH e capacete EPI filhos do marcador (UV A/B/C) | ✅ |
-| RF03 | Interação por toque | Toque no overlay do item ativo + confirmação; toque errado conta erro; quiz | ✅ |
-| RF04 | Cronometragem | Tempo do reconhecimento do marcador ao fim do quiz | ✅ |
-| RF05 | Registro de erros | Contabiliza seleções e respostas incorretas | ✅ |
-| RF06 | Exportação local | JSON + CSV em `persistentDataPath`; histórico e share iOS | ✅ |
-| RF07 | Câmera sob demanda | `ARSession` só ativa após “Abrir câmera” | ✅ |
-| RF08 | Histórico de sessões | Lista e reexporta sessões salvas no aparelho | ✅ |
-| RF09 | Share Android nativo | Intent de compartilhamento | ⬜ |
-| RF10 | Experimento SUS / retenção 7 dias | Módulo completo do protocolo do artigo | 🚧 |
+| ID   | Funcionalidade                    | Descrição                                                                           | Status |
+| ---- | --------------------------------- | ----------------------------------------------------------------------------------- | ------ |
+| RF01 | Rastreamento de imagem            | Identifica o Image Target (`SafetyLensEquipmentTarget`) via `ARTrackedImageManager` | ✅     |
+| RF02 | Exibição de conteúdo em RA        | Placas HOT/PINCH e capacete EPI filhos do marcador (UV A/B/C)                       | ✅     |
+| RF03 | Interação por toque               | Toque no overlay do item ativo + confirmação; toque errado conta erro; quiz         | ✅     |
+| RF04 | Cronometragem                     | Tempo do reconhecimento do marcador ao fim do quiz                                  | ✅     |
+| RF05 | Registro de erros                 | Contabiliza seleções e respostas incorretas                                         | ✅     |
+| RF06 | Exportação local                  | JSON + CSV em `persistentDataPath`; histórico e share iOS                           | ✅     |
+| RF07 | Câmera sob demanda                | `ARSession` só ativa após “Abrir câmera”                                            | ✅     |
+| RF08 | Histórico de sessões              | Lista e reexporta sessões salvas no aparelho                                        | ✅     |
+| RF09 | Share Android nativo              | Intent de compartilhamento                                                          | ⬜     |
+| RF10 | Experimento SUS / retenção 7 dias | Módulo completo do protocolo do artigo                                              | 🚧     |
 
 **Legenda:** ✅ Implementado · 🚧 Em desenvolvimento · ⬜ Planejado · ❌ Cancelado
 
@@ -135,41 +135,41 @@ Materiais complementares (persona, jornada): pasta [`docs/documents/`](docs/docu
 
 ## 7. Requisitos Não Funcionais
 
-| ID | Categoria | Requisito |
-|---|---|---|
+| ID    | Categoria       | Requisito                                                                          |
+| ----- | --------------- | ---------------------------------------------------------------------------------- |
 | RNF01 | Compatibilidade | Smartphones convencionais Android 8+ (ARCore) / iOS (ARKit), sem LiDAR obrigatório |
-| RNF02 | Desempenho | Meta ≥ 30 FPS durante a experiência RA |
-| RNF03 | Estabilidade | Manter ancoramento sob variações moderadas de iluminação |
-| RNF04 | Usabilidade | Fluxo compreensível com instrução breve |
-| RNF05 | Offline | RA e gravação de dados sem internet |
-| RNF06 | Privacidade | Sem conta/nuvem; ID higienizado; descrição de uso da câmera no iOS |
-| RNF07 | Documentação | Repositório permite configurar e executar o projeto |
+| RNF02 | Desempenho      | Meta ≥ 30 FPS durante a experiência RA                                             |
+| RNF03 | Estabilidade    | Manter ancoramento sob variações moderadas de iluminação                           |
+| RNF04 | Usabilidade     | Fluxo compreensível com instrução breve                                            |
+| RNF05 | Offline         | RA e gravação de dados sem internet                                                |
+| RNF06 | Privacidade     | Sem conta/nuvem; ID higienizado; descrição de uso da câmera no iOS                 |
+| RNF07 | Documentação    | Repositório permite configurar e executar o projeto                                |
 
 ---
 
 ## 8. Tecnologias Utilizadas
 
-| Tecnologia | Versão | Utilização |
-|---|---|---|
-| Unity | **6000.3.0f1** (6.3 LTS) | Engine principal (Built-in Render Pipeline) |
-| C# | compatível com Unity 6 | Scripts de sessão, UI, persistência, RA |
-| AR Foundation | **6.3.5** | `ARTrackedImageManager`, sessão, câmera |
-| Apple ARKit XR Plugin | **6.3.5** | Image Tracking no iOS |
-| Google ARCore XR Plugin | **6.3.5** | Image Tracking no Android |
-| XR Plugin Management | **4.6.1** | Loaders ARKit/ARCore |
-| Objective-C++ | — | Plugin iOS de compartilhamento (`SafetyLensNativeShare.mm`) |
-| Git / GitHub | — | Controle de versão e documentação |
-| Trello | — | Gestão da equipe ([board ODS Vision SafetyLens](https://trello.com/invite/b/6a9c364bf3a2c97532634894/ATTId1a224107fc31f8c12e0758e34583e5a251C5E4B/ods-vision-safetylens)) |
+| Tecnologia              | Versão                   | Utilização                                                                                                                                                                |
+| ----------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unity                   | **6000.3.0f1** (6.3 LTS) | Engine principal (Built-in Render Pipeline)                                                                                                                               |
+| C#                      | compatível com Unity 6   | Scripts de sessão, UI, persistência, RA                                                                                                                                   |
+| AR Foundation           | **6.3.5**                | `ARTrackedImageManager`, sessão, câmera                                                                                                                                   |
+| Apple ARKit XR Plugin   | **6.3.5**                | Image Tracking no iOS                                                                                                                                                     |
+| Google ARCore XR Plugin | **6.3.5**                | Image Tracking no Android                                                                                                                                                 |
+| XR Plugin Management    | **4.6.1**                | Loaders ARKit/ARCore                                                                                                                                                      |
+| Objective-C++           | —                        | Plugin iOS de compartilhamento (`SafetyLensNativeShare.mm`)                                                                                                               |
+| Git / GitHub            | —                        | Controle de versão e documentação                                                                                                                                         |
+| Trello                  | —                        | Gestão da equipe ([board ODS Vision SafetyLens](https://trello.com/invite/b/6a9c364bf3a2c97532634894/ATTId1a224107fc31f8c12e0758e34583e5a251C5E4B/ods-vision-safetylens)) |
 
 ---
 
 ## 9. Hardware Utilizado
 
-| Equipamento | Modelo | Característica relevante | Utilização |
-|---|---|---|---|
-| Computador | **MacBook (chip M2)** | macOS; Unity + Xcode | Desenvolvimento e build iOS |
-| Smartphone | **iPhone 12** | iOS + ARKit | Execução e testes de Image Tracking |
-| Alvo físico | Impressão / tela ~20 cm | Marcador WL03 | Image Target de calibração |
+| Equipamento | Modelo                  | Característica relevante | Utilização                          |
+| ----------- | ----------------------- | ------------------------ | ----------------------------------- |
+| Computador  | **MacBook (chip M2)**   | macOS; Unity + Xcode     | Desenvolvimento e build iOS         |
+| Smartphone  | **iPhone 12**           | iOS + ARKit              | Execução e testes de Image Tracking |
+| Alvo físico | Impressão / tela ~20 cm | Marcador WL03            | Image Target de calibração          |
 
 > Não declaramos compatibilidade com dispositivos não testados pela equipe.
 
@@ -192,7 +192,7 @@ Usuário
   → Persistência local JSON/CSV (SafetyLensSessionStore)
 ```
 
-Detalhes adicionais: [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md).
+Detalhes adicionais: `[docs/ARQUITETURA.md](docs/ARQUITETURA.md)`.
 
 ---
 
@@ -224,7 +224,7 @@ Não utilizamos Plane Detection como fluxo principal, nem óculos dedicados.
 - rótulos billboard;
 - UI de sessão (toast, sheet, quiz, resultado).
 
-Marcador: [`docs/images/marcador-wl03-equipment-target.png`](docs/images/marcador-wl03-equipment-target.png) (imprimir ~20 cm). Customização UV: [`docs/CUSTOMIZACAO.md`](docs/CUSTOMIZACAO.md).
+Marcador: `[docs/images/marcador-wl03-equipment-target.png](docs/images/marcador-wl03-equipment-target.png)` (imprimir ~20 cm). Customização UV: `[docs/CUSTOMIZACAO.md](docs/CUSTOMIZACAO.md)`.
 
 ---
 
@@ -251,7 +251,7 @@ SafetyLens/
 │
 ├── docs/
 │   ├── diagrams/               # arquitetura, fluxo RA
-│   ├── documents/              # artigo científico e anexos
+│   ├── documents/              # planilha de artigos-base e anexos (artigo do projeto via SharePoint)
 │   ├── images/                 # screenshots e marcador (ver README da pasta)
 │   ├── ARQUITETURA.md
 │   └── CUSTOMIZACAO.md
@@ -262,32 +262,32 @@ SafetyLens/
 └── README.md
 ```
 
-| Pasta | Finalidade |
-|---|---|
-| `Assets/Scripts` | Código produzido pela equipe |
-| `Assets/Scenes` | Cena única `SafetyLensAR` |
-| `Assets/Markers` + `ReferenceImages` | Image Target e library |
-| `docs/diagrams` | Diagramas técnicos |
-| `docs/images` | Screenshots e figuras |
-| `docs/documents` | Artigo e documentos complementares |
+| Pasta                                | Finalidade                         |
+| ------------------------------------ | ---------------------------------- |
+| `Assets/Scripts`                     | Código produzido pela equipe       |
+| `Assets/Scenes`                      | Cena única `SafetyLensAR`          |
+| `Assets/Markers` + `ReferenceImages` | Image Target e library             |
+| `docs/diagrams`                      | Diagramas técnicos                 |
+| `docs/images`                        | Screenshots e figuras              |
+| `docs/documents`                     | Planilha de artigos-base e anexos (artigo do projeto no SharePoint) |
 
 ---
 
 ## 13. Principais Scripts
 
-| Script | Responsabilidade |
-|---|---|
-| `SafetyLensSessionController.cs` | Fases da sessão, tracking, seleção/confirmação AR, quiz, métricas |
-| `SafetyLensStatusOverlay.cs` | UI IMGUI (identificação, câmera, quiz, resultado, histórico) |
-| `SafetyLensArVisuals.cs` | Fábrica dos overlays (placas + capacete) |
-| `SafetyLensPictograms.cs` | Rasterização das placas ISO em background |
-| `SafetyLensBillboard.cs` | Orientação legível dos rótulos |
-| `SafetyLensSessionStore.cs` | Persistência JSON/CSV e histórico |
-| `SafetyLensNativeShare.cs` + `.mm` | Compartilhamento iOS |
-| `SafetyLensTheme.cs` | Design tokens |
-| `SafetyLensModels.cs` | Modelos de dados e conversão UV → metros |
-| `SafetyLensProjectSetup.cs` (Editor) | Configuração XR, validação, build |
-| `SafetyLensIosPostProcess.cs` (Editor) | Flags Xcode / Module Verifier / câmera plist |
+| Script                                 | Responsabilidade                                                  |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| `SafetyLensSessionController.cs`       | Fases da sessão, tracking, seleção/confirmação AR, quiz, métricas |
+| `SafetyLensStatusOverlay.cs`           | UI IMGUI (identificação, câmera, quiz, resultado, histórico)      |
+| `SafetyLensArVisuals.cs`               | Fábrica dos overlays (placas + capacete)                          |
+| `SafetyLensPictograms.cs`              | Rasterização das placas ISO em background                         |
+| `SafetyLensBillboard.cs`               | Orientação legível dos rótulos                                    |
+| `SafetyLensSessionStore.cs`            | Persistência JSON/CSV e histórico                                 |
+| `SafetyLensNativeShare.cs` + `.mm`     | Compartilhamento iOS                                              |
+| `SafetyLensTheme.cs`                   | Design tokens                                                     |
+| `SafetyLensModels.cs`                  | Modelos de dados e conversão UV → metros                          |
+| `SafetyLensProjectSetup.cs` (Editor)   | Configuração XR, validação, build                                 |
+| `SafetyLensIosPostProcess.cs` (Editor) | Flags Xcode / Module Verifier / câmera plist                      |
 
 ---
 
@@ -344,7 +344,7 @@ cd ODS-Vision-SafetyLens
 2. Abra a cena `Assets/Scenes/SafetyLensAR.unity`.
 3. Menu **SafetyLens → Build iOS (Xcode)** → gera `Builds/` (pasta ignorada pelo Git; gerar localmente).
 4. Feche o Xcode se estiver aberto; abra `Builds/Unity-iPhone.xcodeproj`.
-5. Em caso de erro *Module Verifier / double-quoted include*: `./Tools/fix-xcode-module-verifier.sh` (Xcode fechado). Se pedir salvar o `pbxproj`, escolha **Don't Save**.
+5. Em caso de erro _Module Verifier / double-quoted include_: `./Tools/fix-xcode-module-verifier.sh` (Xcode fechado). Se pedir salvar o `pbxproj`, escolha **Don't Save**.
 6. Signing & Capabilities → seu time Apple.
 7. **Clean (⇧⌘K)** e **Run (⌘R)** no iPhone.
 
@@ -362,23 +362,25 @@ cd ODS-Vision-SafetyLens
 3. Aponte para o marcador WL03 (~20 cm).
 4. Aguarde o reconhecimento (cronômetro inicia).
 5. Para cada item (HOT → PINCH → EPI):
-   - toque no overlay destacado na câmera (seleção);
-   - toque em **Confirmar item** no card inferior.
+
+- toque no overlay destacado na câmera (seleção);
+- toque em **Confirmar item** no card inferior.
+
 6. Responda o quiz de fixação.
 7. Veja o resultado; exporte/compartilhe CSV se necessário.
 8. Use **Histórico** para sessões anteriores.
 
 ### Screenshots da interface
 
-> **Pendência da equipe:** inserir capturas atuais nestes caminhos (ver [`docs/images/README.md`](docs/images/README.md)).
+> **Pendência da equipe:** inserir capturas atuais nestes caminhos (ver `[docs/images/README.md](docs/images/README.md)`).
 
-| Tela | Arquivo esperado | Finalidade |
-|---|---|---|
+| Tela          | Arquivo esperado                     | Finalidade                 |
+| ------------- | ------------------------------------ | -------------------------- |
 | Identificação | `docs/images/tela-identificacao.png` | Informar ID e abrir câmera |
-| Scanning | `docs/images/tela-scanning.png` | Enquadrar o marcador |
-| Inspeção RA | `docs/images/experiencia-ra-abc.png` | Ver e tocar HOT/PINCH/EPI |
-| Quiz | `docs/images/tela-quiz.png` | Fixação de conhecimento |
-| Resultado | `docs/images/tela-resultado.png` | Métricas e exportação |
+| Scanning      | `docs/images/tela-scanning.png`      | Enquadrar o marcador       |
+| Inspeção RA   | `docs/images/experiencia-ra-abc.png` | Ver e tocar HOT/PINCH/EPI  |
+| Quiz          | `docs/images/tela-quiz.png`          | Fixação de conhecimento    |
+| Resultado     | `docs/images/tela-resultado.png`     | Métricas e exportação      |
 
 ```markdown
 ![Tela de identificação](docs/images/tela-identificacao.png)
@@ -412,10 +414,10 @@ flowchart TD
 
 ## 19. Caso de Uso (resumo)
 
-| Ator | Objetivo | Fluxo principal |
-|---|---|---|
-| Participante | Completar inspeção guiada | ID → câmera → reconhecer marcador → selecionar/confirmar riscos → quiz → export |
-| Pesquisador / instrutor | Coletar métricas | Lê JSON/CSV gerados no aparelho (tempo, erros, respostas) |
+| Ator                    | Objetivo                  | Fluxo principal                                                                 |
+| ----------------------- | ------------------------- | ------------------------------------------------------------------------------- |
+| Participante            | Completar inspeção guiada | ID → câmera → reconhecer marcador → selecionar/confirmar riscos → quiz → export |
+| Pesquisador / instrutor | Coletar métricas          | Lê JSON/CSV gerados no aparelho (tempo, erros, respostas)                       |
 
 ---
 
@@ -456,29 +458,29 @@ docs/images/
 
 ## 22. Testes Técnicos
 
-| Teste | Procedimento | Resultado esperado | Resultado obtido | Status |
-|---|---|---|---|---|
-| Validação Editor | SafetyLens → Validar projeto | ARKit + ARCore + UV OK | `VALIDACAO OK` | ✅ |
-| Câmera sob demanda | Abrir app sem tocar Abrir câmera | Sem feed ativo | Sessão inicia inativa | ✅ |
-| Image Tracking | Apontar marcador 20 cm | Detecta target e inicia tempo | Detectado no iPhone 12 | ✅ |
-| Overlays A/B/C | Após tracking | HOT/PINCH/EPI nas letras | Âncoras UV estáveis | ✅ |
-| RF03 toque | Confirmar sem tocar no AR | Botão desabilitado | Bloqueado | ✅ |
-| RF03 correto | Toque no item + Confirmar | Avança etapa | Funciona | ✅ |
-| Quiz | Responder perguntas | Feedback certo/errado | Funciona | ✅ |
-| Export | Finalizar sessão | JSON + CSV locais | Funciona | ✅ |
-| Share iOS | Compartilhar CSV | Share sheet | Funciona | ✅ |
-| Android end-to-end | Build and Run ARCore | Paridade com iOS | *A registrar pela equipe* | 🚧 |
+| Teste              | Procedimento                     | Resultado esperado            | Resultado obtido          | Status |
+| ------------------ | -------------------------------- | ----------------------------- | ------------------------- | ------ |
+| Validação Editor   | SafetyLens → Validar projeto     | ARKit + ARCore + UV OK        | `VALIDACAO OK`            | ✅     |
+| Câmera sob demanda | Abrir app sem tocar Abrir câmera | Sem feed ativo                | Sessão inicia inativa     | ✅     |
+| Image Tracking     | Apontar marcador 20 cm           | Detecta target e inicia tempo | Detectado no iPhone 12    | ✅     |
+| Overlays A/B/C     | Após tracking                    | HOT/PINCH/EPI nas letras      | Âncoras UV estáveis       | ✅     |
+| RF03 toque         | Confirmar sem tocar no AR        | Botão desabilitado            | Bloqueado                 | ✅     |
+| RF03 correto       | Toque no item + Confirmar        | Avança etapa                  | Funciona                  | ✅     |
+| Quiz               | Responder perguntas              | Feedback certo/errado         | Funciona                  | ✅     |
+| Export             | Finalizar sessão                 | JSON + CSV locais             | Funciona                  | ✅     |
+| Share iOS          | Compartilhar CSV                 | Share sheet                   | Funciona                  | ✅     |
+| Android end-to-end | Build and Run ARCore             | Paridade com iOS              | _A registrar pela equipe_ | 🚧     |
 
-Roteiro ampliado: [`TESTE_DE_ACEITACAO.md`](TESTE_DE_ACEITACAO.md).
+Roteiro ampliado: `[TESTE_DE_ACEITACAO.md](TESTE_DE_ACEITACAO.md)`.
 
 ---
 
 ## 23. Dispositivos Testados
 
-| Dispositivo | Sistema | Versão | Resultado |
-|---|---|---|---|
-| iPhone 12 | iOS | **18.7.8** | Compatível — Image Tracking e fluxo completo |
-| MacBook M2 | macOS | — | Desenvolvimento / build Xcode |
+| Dispositivo | Sistema | Versão     | Resultado                                    |
+| ----------- | ------- | ---------- | -------------------------------------------- |
+| iPhone 12   | iOS     | **18.7.8** | Compatível — Image Tracking e fluxo completo |
+| MacBook M2  | macOS   | —          | Desenvolvimento / build Xcode                |
 
 ---
 
@@ -492,49 +494,50 @@ Roteiro ampliado: [`TESTE_DE_ACEITACAO.md`](TESTE_DE_ACEITACAO.md).
 - UI em IMGUI: acessibilidade limitada (VoiceOver / Dynamic Type).
 - Build iOS exige workaround do **Module Verifier** do Xcode em alguns ambientes.
 
-Plano de melhorias: [`plans/melhorias-ra-pos-auditoria.md`](plans/melhorias-ra-pos-auditoria.md).
+Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-pos-auditoria.md)`.
 
 ---
 
 ## 25. Evidências de Funcionamento
 
-| Evidência | Onde colocar / link |
-|---|---|
-| Screenshot RA com A/B/C | `docs/images/experiencia-ra-abc.png` *(será adicionado após as capturas)* |
-| Evidência no iPhone | `docs/images/evidencia-ra-iphone.png` *(será adicionado após as capturas)* |
-| Vídeo demonstrativo | *(será adicionado após a gravação)* |
-| Artigo científico | [`docs/documents/SafetyLens-Artigo-Cientifico.pdf`](docs/documents/SafetyLens-Artigo-Cientifico.pdf) |
+| Evidência               | Onde colocar / link                                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------------------------------- |
+| Screenshot RA com A/B/C | `docs/images/experiencia-ra-abc.png` _(será adicionado após as capturas)_                            |
+| Evidência no iPhone     | `docs/images/evidencia-ra-iphone.png` _(será adicionado após as capturas)_                           |
+| Vídeo demonstrativo     | _(será adicionado após a gravação)_                                                                  |
+| Artigo científico       | [SharePoint (Word — versão atualizada)](https://facens-my.sharepoint.com/:w:/g/personal/223969_facens_br/IQC635MrvwTJQr-ThWC7yNzgAfASb7rOqj2sZgzheg6sdYE?e=UEWZgv) |
 
 ---
 
 ## 26. Repositórios e Recursos
 
-| Recurso | Link |
-|---|---|
-| Código-fonte | https://github.com/JoaoLops3/ODS-Vision-SafetyLens |
-| Trello | https://trello.com/invite/b/6a9c364bf3a2c97532634894/ATTId1a224107fc31f8c12e0758e34583e5a251C5E4B/ods-vision-safetylens |
+| Recurso                                        | Link                                                                                                                                                                                                                                                                         |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Código-fonte                                   | [https://github.com/JoaoLops3/ODS-Vision-SafetyLens](https://github.com/JoaoLops3/ODS-Vision-SafetyLens)                                                                                                                                                                     |
+| Trello                                         | [https://trello.com/invite/b/6a9c364bf3a2c97532634894/ATTId1a224107fc31f8c12e0758e34583e5a251C5E4B/ods-vision-safetylens](https://trello.com/invite/b/6a9c364bf3a2c97532634894/ATTId1a224107fc31f8c12e0758e34583e5a251C5E4B/ods-vision-safetylens)                           |
+| Artigo científico do projeto                    | [SharePoint (Word — versão atualizada)](https://facens-my.sharepoint.com/:w:/g/personal/223969_facens_br/IQC635MrvwTJQr-ThWC7yNzgAfASb7rOqj2sZgzheg6sdYE?e=UEWZgv)                                                                                                           |
 | Planilha de artigos científicos (base teórica) | [SharePoint](https://facens-my.sharepoint.com/:x:/g/personal/223969_facens_br/IQD6DAxNHPhGSaIQRpkXLhdFAZtFv9VKDNwsFKHG7cuFfUY?e=43COmv) · [`docs/documents/Tabela_Artigos_Cientificos_SafetyLens_UPX8.xlsx`](docs/documents/Tabela_Artigos_Cientificos_SafetyLens_UPX8.xlsx) |
-| Vídeo de demonstração | *(será adicionado após a gravação)* |
-| Modelo de README da disciplina | https://github.com/dr-ohata/upx-modelo |
-| Documentação complementar | [`docs/`](docs/) |
+| Vídeo de demonstração                          | _(será adicionado após a gravação)_                                                                                                                                                                                                                                          |
+| Modelo de README da disciplina                 | [https://github.com/dr-ohata/upx-modelo](https://github.com/dr-ohata/upx-modelo)                                                                                                                                                                                             |
+| Documentação complementar                      | [`docs/`](docs/)                                                                                                                                                                                                                                                             |
 
 ---
 
 ## 27. Cronograma Técnico
 
-| Atividade | Responsável | Status |
-|---|---|---|
-| Artigo / requisitos RF–RNF | Equipe ODS Vision | ✅ |
-| Configuração Unity + XR | Equipe | ✅ |
-| Image Tracking + overlays | Equipe | ✅ |
-| Âncoras UV A/B/C + EPI no marcador | Equipe | ✅ |
-| RF03 toque + confirmação | Equipe | ✅ |
-| Quiz + export JSON/CSV | Equipe | ✅ |
-| Build / testes iPhone 12 | Equipe | ✅ |
-| Documentação GitHub (este README) | Equipe | 🚧 |
-| Screenshots e vídeo | Equipe | ⬜ |
-| Testes Android ARCore | Equipe | ⬜ |
-| Experimento SUS / retenção 7 dias | Equipe | 🚧 |
+| Atividade                          | Responsável       | Status |
+| ---------------------------------- | ----------------- | ------ |
+| Artigo / requisitos RF–RNF         | Equipe ODS Vision | ✅     |
+| Configuração Unity + XR            | Equipe            | ✅     |
+| Image Tracking + overlays          | Equipe            | ✅     |
+| Âncoras UV A/B/C + EPI no marcador | Equipe            | ✅     |
+| RF03 toque + confirmação           | Equipe            | ✅     |
+| Quiz + export JSON/CSV             | Equipe            | ✅     |
+| Build / testes iPhone 12           | Equipe            | ✅     |
+| Documentação GitHub (este README)  | Equipe            | 🚧     |
+| Screenshots e vídeo                | Equipe            | ⬜     |
+| Testes Android ARCore              | Equipe            | ⬜     |
+| Experimento SUS / retenção 7 dias  | Equipe            | 🚧     |
 
 ---
 
@@ -591,19 +594,19 @@ Evita-se um único commit com todo o projeto. Branches/tags conforme necessidade
 - Protocolo completo SUS + retenção 7 dias no app.
 - Screenshots e vídeo oficiais na pasta `docs/images/`.
 
-Ver também [`plans/melhorias-ra-pos-auditoria.md`](plans/melhorias-ra-pos-auditoria.md).
+Ver também `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-pos-auditoria.md)`.
 
 ---
 
 ## 31. Custos e Recursos
 
-| Recurso | Tipo | Custo/Condição |
-|---|---|---|
-| Unity Personal / Educacional | Software | Conforme licença UniFacens / Unity |
-| AR Foundation / ARKit / ARCore | Software | Gratuitos via Package Manager |
-| MacBook M2 | Hardware | Equipamento da equipe |
-| iPhone 12 | Hardware | Equipamento da equipe |
-| GitHub / Trello | Serviço | Contas da equipe |
+| Recurso                        | Tipo     | Custo/Condição                     |
+| ------------------------------ | -------- | ---------------------------------- |
+| Unity Personal / Educacional   | Software | Conforme licença UniFacens / Unity |
+| AR Foundation / ARKit / ARCore | Software | Gratuitos via Package Manager      |
+| MacBook M2                     | Hardware | Equipamento da equipe              |
+| iPhone 12                      | Hardware | Equipamento da equipe              |
+| GitHub / Trello                | Serviço  | Contas da equipe                   |
 
 ---
 
@@ -616,13 +619,13 @@ Uso e redistribuição devem respeitar as políticas da instituição e crédito
 
 ## 33. Autores
 
-- **Brunno Eduardo Marfil Marins** (RA 236051) — Desenvolvedor AR  
-- **Bruno Romi Cervone** (RA 235212) — Engenharia de Software e testes de usabilidade  
-- **Giovane Zanzarini Iano** (RA 236082) — Front-end, UI/UX e Design 3D  
-- **Hector Silveira Colchiesqui** (RA 235354) — Arquitetura e modelagem 3D/assets  
-- **João Gabriel Lopes Aguiar** (RA 223969) — Gestão de projeto e documentação  
-- **Luis Alberto Sant'Anna de Araújo** (RA 236401) — Pesquisa científica e análise de dados  
-- **Miguel Muran Zvir Novaes** (RA 222674) — Redação e metodologia  
+- **Brunno Eduardo Marfil Marins** (RA 236051) — Desenvolvedor AR
+- **Bruno Romi Cervone** (RA 235212) — Engenharia de Software e testes de usabilidade
+- **Giovane Zanzarini Iano** (RA 236082) — Front-end, UI/UX e Design 3D
+- **Hector Silveira Colchiesqui** (RA 235354) — Arquitetura e modelagem 3D/assets
+- **João Gabriel Lopes Aguiar** (RA 223969) — Gestão de projeto e documentação
+- **Luis Alberto Sant'Anna de Araújo** (RA 236401) — Pesquisa científica e análise de dados
+- **Miguel Muran Zvir Novaes** (RA 222674) — Redação e metodologia
 
 **Instituição:** UniFacens  
 **Disciplina:** UPX — Realidade Aumentada  
@@ -644,12 +647,12 @@ Uso e redistribuição devem respeitar as políticas da instituição e crédito
 - [x] Procedimento de instalação
 - [x] Procedimento de execução (iOS)
 - [x] Procedimento de utilização
-- [ ] Screenshots reais em `docs/images/` *(após capturas)*
+- [ ] Screenshots reais em `docs/images/` _(após capturas)_
 - [x] Testes registrados (parcial; Android pendente)
 - [x] Dispositivos testados informados (iPhone 12 + MacBook M2)
 - [x] Limitações conhecidas documentadas
-- [ ] Evidência em vídeo *(inserir link)*
-- [x] Artigo em `docs/documents/`
+- [ ] Evidência em vídeo _(inserir link)_
+- [x] Artigo do projeto linkado no SharePoint (versão sempre atualizada)
 - [x] Commits representam a evolução do projeto
 - [x] Funções técnicas de **todos** os integrantes preenchidas
 - [x] Nome completo do professor confirmado
