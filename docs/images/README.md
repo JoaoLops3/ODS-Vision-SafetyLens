@@ -1,22 +1,17 @@
 # Imagens da documentação (`docs/images/`)
 
-Coloque aqui as **screenshots atuais** do aplicativo em execução.
+## Estrutura
 
-## Arquivos sugeridos (substitua quando tiver as capturas)
+```text
+docs/images/
+├── marcador-wl03-equipment-target.png   # Image Target (compartilhado)
+└── v1/                                  # Versão 1 do protótipo
+    ├── interface/                       # Screenshots das telas (01–12) ✅
+    └── evidencias/                      # Foto / vídeo de funcionamento
+```
 
-| Arquivo sugerido | Conteúdo |
-|---|---|
-| `tela-identificacao.png` | Tela inicial com campo de ID do participante |
-| `tela-scanning.png` | Câmera ativa procurando o marcador |
-| `experiencia-ra-abc.png` | Overlays HOT / PINCH / EPI nas letras A / B / C |
-| `tela-quiz.png` | Quiz de fixação |
-| `tela-resultado.png` | Resultado com tempo, erros e exportação |
-| `evidencia-ra-iphone.png` | Foto/gravação do iPhone apontado ao alvo físico |
-
-## Já presente
-
-| Arquivo | Descrição |
-|---|---|
-| `marcador-wl03-equipment-target.png` | Imagem de referência do Image Target (imprimir ~20 cm) |
-
-O `README.md` na raiz já referencia esses nomes. Enquanto as capturas não forem adicionadas, as seções de Interface / Evidências apontam para estes caminhos.
+| Pasta | Uso | Status |
+|---|---|---|
+| [`v1/interface/`](v1/interface/) | Imagens do projeto (telas, ordem do fluxo) | ✅ |
+| [`v1/evidencias/`](v1/evidencias/) | Evidências de funcionamento | Pendente |
+| `marcador-wl03-equipment-target.png` | Arte do marcador (~20 cm) | ✅ |

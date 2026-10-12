@@ -268,7 +268,7 @@ SafetyLens/
 | `Assets/Scenes`                      | Cena única `SafetyLensAR`          |
 | `Assets/Markers` + `ReferenceImages` | Image Target e library             |
 | `docs/diagrams`                      | Diagramas técnicos                 |
-| `docs/images`                        | Screenshots e figuras              |
+| `docs/images`                        | Marcador + `v1/interface` e `v1/evidencias` |
 | `docs/documents`                     | Planilha de artigos-base e anexos (artigo do projeto no SharePoint) |
 
 ---
@@ -370,24 +370,39 @@ cd ODS-Vision-SafetyLens
 7. Veja o resultado; exporte/compartilhe CSV se necessário.
 8. Use **Histórico** para sessões anteriores.
 
-### Screenshots da interface
+### Screenshots da interface (versão 1)
 
-> **Pendência da equipe:** inserir capturas atuais nestes caminhos (ver `[docs/images/README.md](docs/images/README.md)`).
+Pasta: [`docs/images/v1/interface/`](docs/images/v1/interface/)
 
-| Tela          | Arquivo esperado                     | Finalidade                 |
-| ------------- | ------------------------------------ | -------------------------- |
-| Identificação | `docs/images/tela-identificacao.png` | Informar ID e abrir câmera |
-| Scanning      | `docs/images/tela-scanning.png`      | Enquadrar o marcador       |
-| Inspeção RA   | `docs/images/experiencia-ra-abc.png` | Ver e tocar HOT/PINCH/EPI  |
-| Quiz          | `docs/images/tela-quiz.png`          | Fixação de conhecimento    |
-| Resultado     | `docs/images/tela-resultado.png`     | Métricas e exportação      |
+| # | Tela | Arquivo | Finalidade |
+|---|---|---|---|
+| 01 | Inicial | `01-tela-inicial.PNG` | Informar ID e abrir câmera |
+| 02 | Histórico | `02-tela-historico.PNG` | Ver sessões anteriores |
+| 03 | Câmera aberta | `03-tela-camera-aberta.PNG` | Scanning do marcador |
+| 03b | Apontada à imagem | `03b-tela-apontada-imagem.PNG` | Marcador reconhecido |
+| 04 | Zona quente | `04-tela-confirmado-zona-quente.PNG` | Confirmar HOT |
+| 05 | Ponto de pinçamento | `05-tela-ponto-pincamento.PNG` | Item PINCH ativo |
+| 06 | Confirmando pinçamento | `06-tela-confirmando-pincamento.PNG` | Confirmar PINCH |
+| 07 | Capacete / EPI | `07-tela-capacete.PNG` | Item EPI |
+| 08 | Quiz 1 | `08-quiz-pergunta1.PNG` | Fixação — pergunta 1 |
+| 09 | Quiz 2 | `09-quiz-pergunta2.PNG` | Fixação — pergunta 2 |
+| 10 | Quiz 3 | `10-quiz-pergunta3.PNG` | Fixação — pergunta 3 |
+| 11 | Final | `11-tela-final.PNG` | Resultado e métricas |
+| 12 | Compartilhar | `12-tela-compartilhando.PNG` | Share sheet do CSV |
 
-```markdown
-![Tela de identificação](docs/images/tela-identificacao.png)
-![Experiência RA nas letras A/B/C](docs/images/experiencia-ra-abc.png)
-![Quiz de fixação](docs/images/tela-quiz.png)
-![Resultado da sessão](docs/images/tela-resultado.png)
-```
+![01 — Tela inicial](docs/images/v1/interface/01-tela-inicial.PNG)
+![02 — Histórico](docs/images/v1/interface/02-tela-historico.PNG)
+![03 — Câmera aberta](docs/images/v1/interface/03-tela-camera-aberta.PNG)
+![03b — Apontada à imagem](docs/images/v1/interface/03b-tela-apontada-imagem.PNG)
+![04 — Zona quente confirmada](docs/images/v1/interface/04-tela-confirmado-zona-quente.PNG)
+![05 — Ponto de pinçamento](docs/images/v1/interface/05-tela-ponto-pincamento.PNG)
+![06 — Confirmando pinçamento](docs/images/v1/interface/06-tela-confirmando-pincamento.PNG)
+![07 — Capacete / EPI](docs/images/v1/interface/07-tela-capacete.PNG)
+![08 — Quiz pergunta 1](docs/images/v1/interface/08-quiz-pergunta1.PNG)
+![09 — Quiz pergunta 2](docs/images/v1/interface/09-quiz-pergunta2.PNG)
+![10 — Quiz pergunta 3](docs/images/v1/interface/10-quiz-pergunta3.PNG)
+![11 — Tela final](docs/images/v1/interface/11-tela-final.PNG)
+![12 — Compartilhando CSV](docs/images/v1/interface/12-tela-compartilhando.PNG)
 
 ---
 
@@ -440,19 +455,30 @@ Finished (resultado / share)
 
 ## 21. Interface
 
-Organização prevista em `docs/images/` (capturas reais a adicionar pela equipe):
+Capturas da **versão 1** (ordem do fluxo):
 
 ```text
 docs/images/
-├── README.md
-├── marcador-wl03-equipment-target.png   ← já incluído
-├── tela-identificacao.png               ← colocar screenshot
-├── tela-scanning.png                    ← colocar screenshot
-├── experiencia-ra-abc.png               ← colocar screenshot
-├── tela-quiz.png                        ← colocar screenshot
-├── tela-resultado.png                   ← colocar screenshot
-└── evidencia-ra-iphone.png              ← colocar evidência de teste
+├── marcador-wl03-equipment-target.png
+└── v1/
+    ├── interface/                    ← screenshots (01…12) ✅
+    │   ├── 01-tela-inicial.PNG
+    │   ├── 02-tela-historico.PNG
+    │   ├── 03-tela-camera-aberta.PNG
+    │   ├── 03b-tela-apontada-imagem.PNG
+    │   ├── 04-tela-confirmado-zona-quente.PNG
+    │   ├── 05-tela-ponto-pincamento.PNG
+    │   ├── 06-tela-confirmando-pincamento.PNG
+    │   ├── 07-tela-capacete.PNG
+    │   ├── 08-quiz-pergunta1.PNG
+    │   ├── 09-quiz-pergunta2.PNG
+    │   ├── 10-quiz-pergunta3.PNG
+    │   ├── 11-tela-final.PNG
+    │   └── 12-tela-compartilhando.PNG
+    └── evidencias/                   ← foto/vídeo de funcionamento (pendente)
 ```
+
+Galeria completa na seção [17. Como Utilizar](#17-como-utilizar-a-aplicação). Detalhes: [`docs/images/v1/interface/README.md`](docs/images/v1/interface/README.md).
 
 ---
 
@@ -502,9 +528,9 @@ Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-po
 
 | Evidência               | Onde colocar / link                                                                                  |
 | ----------------------- | ---------------------------------------------------------------------------------------------------- |
-| Screenshot RA com A/B/C | `docs/images/experiencia-ra-abc.png` _(será adicionado após as capturas)_                            |
-| Evidência no iPhone     | `docs/images/evidencia-ra-iphone.png` _(será adicionado após as capturas)_                           |
-| Vídeo demonstrativo     | _(será adicionado após a gravação)_                                                                  |
+| Screenshots das telas   | [`docs/images/v1/interface/`](docs/images/v1/interface/) (01–12) ✅                                   |
+| Evidência no iPhone     | `docs/images/v1/evidencias/` _(após foto)_                                                           |
+| Vídeo demonstrativo     | link online _(após gravação)_ — ou arquivo em `docs/images/v1/evidencias/`                           |
 | Artigo científico       | [SharePoint (Word — versão atualizada)](https://facens-my.sharepoint.com/:w:/g/personal/223969_facens_br/IQC635MrvwTJQr-ThWC7yNzgAfASb7rOqj2sZgzheg6sdYE?e=UEWZgv) |
 
 ---
@@ -592,7 +618,7 @@ Evita-se um único commit com todo o projeto. Branches/tags conforme necessidade
 - Share nativo Android.
 - Testes automatizados EditMode (UV, CSV, sanitize).
 - Protocolo completo SUS + retenção 7 dias no app.
-- Screenshots e vídeo oficiais na pasta `docs/images/`.
+- Screenshots e evidências oficiais em `docs/images/v1/`.
 
 Ver também `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-pos-auditoria.md)`.
 
@@ -647,11 +673,11 @@ Uso e redistribuição devem respeitar as políticas da instituição e crédito
 - [x] Procedimento de instalação
 - [x] Procedimento de execução (iOS)
 - [x] Procedimento de utilização
-- [ ] Screenshots reais em `docs/images/` _(após capturas)_
+- [x] Screenshots da v1 em `docs/images/v1/interface/` (fluxo 01–12)
 - [x] Testes registrados (parcial; Android pendente)
 - [x] Dispositivos testados informados (iPhone 12 + MacBook M2)
 - [x] Limitações conhecidas documentadas
-- [ ] Evidência em vídeo _(inserir link)_
+- [ ] Evidências da v1 em `docs/images/v1/evidencias/` e/ou link de vídeo
 - [x] Artigo do projeto linkado no SharePoint (versão sempre atualizada)
 - [x] Commits representam a evolução do projeto
 - [x] Funções técnicas de **todos** os integrantes preenchidas
