@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="520" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+  <title id="title">Arquitetura SafetyLens</title>
+  <desc id="desc">Camadas: usuário, interface, lógica C#, Unity, AR Foundation, ARKit/ARCore, câmera</desc>
+  <rect width="720" height="520" fill="#F2F4F7"/>
+  <text x="360" y="36" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#0F1B2D">Arquitetura em camadas  SafetyLens</text>
+  <g font-family="Helvetica, Arial, sans-serif" font-size="14" fill="#0F1B2D">
+    <rect x="120" y="56" width="480" height="44" rx="8" fill="#FFFFFF" stroke="#D5DBE3"/>
+    <text x="360" y="84" text-anchor="middle">Usuário (participante / operador)</text>
+    <rect x="120" y="116" width="480" height="44" rx="8" fill="#E6EFFD" stroke="#1A63D6"/>
+    <text x="360" y="144" text-anchor="middle">Interface IMGUI  SafetyLensStatusOverlay</text>
+    <rect x="120" y="176" width="480" height="44" rx="8" fill="#FFF6D6" stroke="#FFC21A"/>
+    <text x="360" y="204" text-anchor="middle">Lógica de sessão C#  SafetyLensSessionController</text>
+    <rect x="120" y="236" width="480" height="44" rx="8" fill="#FFFFFF" stroke="#D5DBE3"/>
+    <text x="360" y="264" text-anchor="middle">Unity (cena, raycast, renderização 3D)</text>
+    <rect x="120" y="296" width="480" height="44" rx="8" fill="#E3F4EC" stroke="#0F7A55"/>
+    <text x="360" y="324" text-anchor="middle">AR Foundation  ARTrackedImageManager + Image Library</text>
+    <rect x="120" y="356" width="480" height="44" rx="8" fill="#E6EFFD" stroke="#1A63D6"/>
+    <text x="360" y="384" text-anchor="middle">ARKit (iOS) / ARCore (Android)</text>
+    <rect x="120" y="416" width="480" height="44" rx="8" fill="#FFFFFF" stroke="#D5DBE3"/>
+    <text x="360" y="444" text-anchor="middle">Hardware  câmera + sensores do smartphone</text>
+    <rect x="120" y="476" width="480" height="32" rx="8" fill="#E3F4EC" stroke="#0F7A55"/>
+    <text x="360" y="497" text-anchor="middle" font-size="12">Persistência local JSON/CSV  SafetyLensSessionStore (offline)</text>
+  </g>
+</svg>
