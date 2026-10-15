@@ -140,7 +140,7 @@ namespace Facens.SafetyLens.Tests
             var csv = SafetyLensSessionStore.BuildCsv(new[] { record });
 
             StringAssert.StartsWith(
-                "participantId,scenarioId,scenarioTitle,elapsedSeconds,errorCount,hazardsConfirmed,hazardsTotal,quizCorrect,quizTotal,quizAnswers,startedAtIso,finishedAtIso,exportedAtIso",
+                "participantId,scenarioId,scenarioTitle,elapsedSeconds,errorCount,hazardsConfirmed,hazardsTotal,quizCorrect,quizTotal,quizAnswers,startedAtIso,finishedAtIso,exportedAtIso,inspectionSeconds,quizSeconds,fpsAverage,fpsLow1Percent,framesBelow30Ratio,peakMemoryMb,markerName",
                 csv);
             Assert.IsTrue(csv.Contains("\"A,B\""), csv);
             Assert.IsTrue(csv.Contains("\"diz \"\"oi\"\"\""), csv);

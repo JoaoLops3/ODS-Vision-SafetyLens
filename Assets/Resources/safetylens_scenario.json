@@ -41,6 +41,16 @@
       "z": 0.0
     }
   ],
+  "altTargets": [
+    {
+      "name": "SafetyLensQrTarget",
+      "placements": [
+        { "hazardId": "HOT", "u": 0.2, "v": 0.5 },
+        { "hazardId": "PINCH", "u": 0.5, "v": 0.5 },
+        { "hazardId": "EPI", "u": 0.8, "v": 0.5 }
+      ]
+    }
+  ],
   "quiz": [
     {
       "id": 1,

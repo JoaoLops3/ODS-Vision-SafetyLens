@@ -31,6 +31,8 @@ namespace Facens.SafetyLens
         ARTrackedImage _trackedImage;
         TrackingLossGate _gate;
         bool _targetUnstable;
+        /// <summary>Primeiro marcador reconhecido na sessão (WL03 ou QR). Os demais são ignorados até reiniciar.</summary>
+        string _sessionTargetName;
 
         // RNF02: FPS/memória medidos só durante a inspeção em RA (a fase que o artigo avalia).
         readonly SafetyLensPerformanceProbe _perf = new SafetyLensPerformanceProbe();
@@ -280,6 +282,7 @@ namespace Facens.SafetyLens
             TargetFound = false;
             TargetEverFound = false;
             _trackedImage = null;
+            _sessionTargetName = null;
             _targetUnstable = false;
             _gate.Reset();
             QuizSelectedIndex = -1;
@@ -293,7 +296,7 @@ namespace Facens.SafetyLens
             ExportSummary = string.Empty;
             ExportFailed = false;
             Phase = AppPhase.Scanning;
-            StatusMessage = "Enquadre a placa do equipamento.";
+            StatusMessage = "Enquadre a placa do equipamento ou o QR Code do treinamento.";
             SetCameraActive(true);
             RefreshVisuals();
             Debug.Log($"[SafetyLens] Sessao iniciada para participante {ParticipantId}.");
@@ -314,7 +317,12 @@ namespace Facens.SafetyLens
 
         void HandleTrackedImage(ARTrackedImage image)
         {
-            if (image.referenceImage.name != _scenario.targetName) return;
+            var name = image.referenceImage.name;
+            if (!_scenario.IsKnownTarget(name)) return;
+            // Sessão presa ao primeiro marcador reconhecido: com WL03 e QR no quadro ao mesmo
+            // tempo, o segundo não rouba o conteúdo (markerName vira variável de controle).
+            if (_sessionTargetName != null && !string.Equals(name, _sessionTargetName, StringComparison.Ordinal))
+                return;
             _trackedImage = image;
             if (image.trackingState != TrackingState.Tracking) return;
             SetTargetFound(true, image);
@@ -325,6 +333,7 @@ namespace Facens.SafetyLens
             if (found && image != null)
             {
                 _trackedImage = image;
+                _sessionTargetName ??= image.referenceImage.name;
                 // RF04: cronômetro só no primeiro tracking — reaquisições não zeram o tempo.
                 if (_startedAt < 0f)
                 {
@@ -436,11 +445,13 @@ namespace Facens.SafetyLens
             foreach (var hazard in _scenario.hazards)
             {
                 if (!_visuals.TryGetValue(hazard.id, out var visual) || visual.Root == null) continue;
-                visual.Root.localPosition = hazard.LocalPositionOnMarker(size);
+                // UV do marcador da sessão: letras A/B/C no WL03, layout próprio no QR.
+                var uv = _scenario.ResolveUv(hazard, _sessionTargetName);
+                visual.Root.localPosition = hazard.LocalPositionOnMarker(size, uv.x, uv.y);
                 if (visual.Zone != null)
                 {
                     // Zona no plano da arte, sob a placa: mesmo UV, lift próprio.
-                    var zonePos = hazard.LocalPositionOnMarker(size);
+                    var zonePos = hazard.LocalPositionOnMarker(size, uv.x, uv.y);
                     zonePos.y = SafetyLensTheme.ArZoneLift;
                     visual.Zone.localPosition = zonePos;
                 }
@@ -651,6 +662,7 @@ namespace Facens.SafetyLens
                 InspectionSeconds,
                 QuizSeconds,
                 _perf.Summarize(),
+                _sessionTargetName ?? _scenario.targetName,
                 _startedUtc.ToString("o"),
                 _finishedUtc.ToString("o"));
 
@@ -789,6 +801,7 @@ namespace Facens.SafetyLens
             QuizSelectedIndex = -1;
             TargetFound = false;
             TargetEverFound = false;
+            _sessionTargetName = null;
             IdentificationError = string.Empty;
             FeedbackAt = float.NegativeInfinity;
             StatusMessage = string.Empty;

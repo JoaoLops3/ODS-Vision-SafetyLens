@@ -43,7 +43,82 @@ namespace Facens.SafetyLens
                     ValidateQuiz(scenario.quiz[i], i, errors);
             }
 
+            if (scenario.altTargets != null && scenario.altTargets.Length > 0)
+                ValidateAltTargets(scenario, errors);
+
             return errors;
+        }
+
+        /// <summary>
+        /// Layouts de Image Targets alternativos (ex.: QR): nome único e diferente do principal,
+        /// e exatamente um placement válido para cada hazard do cenário.
+        /// </summary>
+        static void ValidateAltTargets(SafetyLensScenario scenario, List<string> errors)
+        {
+            var seenNames = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < scenario.altTargets.Length; i++)
+            {
+                var layout = scenario.altTargets[i];
+                var label = layout == null || string.IsNullOrWhiteSpace(layout.name)
+                    ? $"altTargets[{i}]"
+                    : $"altTarget '{layout.name}'";
+
+                if (layout == null)
+                {
+                    errors.Add($"{label}: entrada nula.");
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(layout.name))
+                    errors.Add($"{label}: name vazio.");
+                else if (string.Equals(layout.name, scenario.targetName, StringComparison.Ordinal))
+                    errors.Add($"{label}: name igual ao targetName principal.");
+                else if (!seenNames.Add(layout.name))
+                    errors.Add($"{label}: name duplicado.");
+
+                if (layout.placements == null || layout.placements.Length == 0)
+                {
+                    errors.Add($"{label}: sem placements.");
+                    continue;
+                }
+
+                var placedHazards = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var placement in layout.placements)
+                {
+                    if (placement == null || string.IsNullOrWhiteSpace(placement.hazardId))
+                    {
+                        errors.Add($"{label}: placement sem hazardId.");
+                        continue;
+                    }
+
+                    if (!HazardExists(scenario, placement.hazardId))
+                        errors.Add($"{label}: hazardId '{placement.hazardId}' nao existe no cenario.");
+                    else if (!placedHazards.Add(placement.hazardId))
+                        errors.Add($"{label}: hazardId '{placement.hazardId}' duplicado.");
+
+                    if (placement.u < 0f || placement.u > 1f || placement.v < 0f || placement.v > 1f)
+                        errors.Add(
+                            $"{label}: UV de '{placement.hazardId}' fora de [0,1] (u={placement.u}, v={placement.v}).");
+                }
+
+                if (scenario.hazards != null)
+                {
+                    foreach (var hazard in scenario.hazards)
+                    {
+                        if (hazard != null && !string.IsNullOrWhiteSpace(hazard.id) && !placedHazards.Contains(hazard.id))
+                            errors.Add($"{label}: falta placement para o hazard '{hazard.id}'.");
+                    }
+                }
+            }
+        }
+
+        static bool HazardExists(SafetyLensScenario scenario, string hazardId)
+        {
+            if (scenario.hazards == null) return false;
+            foreach (var hazard in scenario.hazards)
+                if (hazard != null && string.Equals(hazard.id, hazardId, StringComparison.Ordinal))
+                    return true;
+            return false;
         }
 
         static void ValidateHazard(SafetyLensHazard h, int index, List<string> errors)

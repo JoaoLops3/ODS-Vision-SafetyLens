@@ -104,6 +104,7 @@ namespace Facens.SafetyLens
             float inspectionSeconds,
             float quizSeconds,
             SafetyLensPerformanceSummary performance,
+            string markerName,
             string startedAtIso,
             string finishedAtIso)
         {
@@ -125,6 +126,7 @@ namespace Facens.SafetyLens
                 quizCorrect = QuizCorrect,
                 quizTotal = scenario?.quiz?.Length ?? 0,
                 quizAnswers = _quizAnswers.ToArray(),
+                markerName = markerName,
                 startedAtIso = startedAtIso,
                 finishedAtIso = finishedAtIso
             };

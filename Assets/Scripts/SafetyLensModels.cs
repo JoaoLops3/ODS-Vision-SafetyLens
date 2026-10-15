@@ -22,6 +22,63 @@ namespace Facens.SafetyLens
         public string intro;
         public SafetyLensHazard[] hazards;
         public SafetyLensQuizQuestion[] quiz;
+        /// <summary>Image Targets alternativos (ex.: QR Code) com UVs próprios por hazard.</summary>
+        public SafetyLensTargetLayout[] altTargets;
+
+        /// <summary>True se o nome é o alvo principal ou um dos alternativos.</summary>
+        public bool IsKnownTarget(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+            if (string.Equals(name, targetName, StringComparison.Ordinal)) return true;
+            if (altTargets == null) return false;
+            foreach (var layout in altTargets)
+                if (layout != null && string.Equals(layout.name, name, StringComparison.Ordinal))
+                    return true;
+            return false;
+        }
+
+        /// <summary>
+        /// UV do hazard no alvo rastreado: o layout alternativo quando houver placement;
+        /// senão, o u/v do próprio hazard (arte WL03, letras A/B/C).
+        /// </summary>
+        public Vector2 ResolveUv(SafetyLensHazard hazard, string trackedTargetName)
+        {
+            if (hazard == null) return Vector2.zero;
+
+            if (altTargets != null
+                && !string.IsNullOrEmpty(trackedTargetName)
+                && !string.Equals(trackedTargetName, targetName, StringComparison.Ordinal))
+            {
+                foreach (var layout in altTargets)
+                {
+                    if (layout?.placements == null) continue;
+                    if (!string.Equals(layout.name, trackedTargetName, StringComparison.Ordinal)) continue;
+                    foreach (var placement in layout.placements)
+                    {
+                        if (placement != null && string.Equals(placement.hazardId, hazard.id, StringComparison.Ordinal))
+                            return new Vector2(placement.u, placement.v);
+                    }
+                }
+            }
+
+            return new Vector2(hazard.u, hazard.v);
+        }
+    }
+
+    /// <summary>Layout de um Image Target alternativo: onde cada hazard ancora naquele marcador.</summary>
+    [Serializable]
+    public sealed class SafetyLensTargetLayout
+    {
+        public string name;
+        public SafetyLensPlacement[] placements;
+    }
+
+    [Serializable]
+    public sealed class SafetyLensPlacement
+    {
+        public string hazardId;
+        public float u;
+        public float v;
     }
 
     [Serializable]
@@ -50,7 +107,11 @@ namespace Facens.SafetyLens
         /// Posição local filha do ARTrackedImage (plano XZ, +Y saindo da arte).
         /// u/v mapeiam o ponto fixo da arte; size vem da pose rastreada (ou do tamanho de referência).
         /// </summary>
-        public Vector3 LocalPositionOnMarker(Vector2 markerSizeMeters)
+        public Vector3 LocalPositionOnMarker(Vector2 markerSizeMeters) =>
+            LocalPositionOnMarker(markerSizeMeters, u, v);
+
+        /// <summary>Mesma conta com UV externo (layout de Image Target alternativo, ex.: QR).</summary>
+        public Vector3 LocalPositionOnMarker(Vector2 markerSizeMeters, float anchorU, float anchorV)
         {
             var width = markerSizeMeters.x > 1e-4f ? markerSizeMeters.x : SafetyLensTheme.ArMarkerWidth;
             var height = markerSizeMeters.y > 1e-4f ? markerSizeMeters.y : SafetyLensTheme.ArMarkerHeight;
@@ -60,9 +121,9 @@ namespace Facens.SafetyLens
             else if (IsEpi) lift = SafetyLensTheme.ArHelmetLift;
             else lift = SafetyLensTheme.ArMarkerLift;
             return new Vector3(
-                (u - 0.5f) * width + x,
+                (anchorU - 0.5f) * width + x,
                 lift,
-                (v - 0.5f) * height + y);
+                (anchorV - 0.5f) * height + y);
         }
         public bool IsAlert => string.Equals(kind, "alert", StringComparison.OrdinalIgnoreCase);
         public bool IsEpi => string.Equals(kind, "epi", StringComparison.OrdinalIgnoreCase);
@@ -120,6 +181,8 @@ namespace Facens.SafetyLens
         public int quizCorrect;
         public int quizTotal;
         public string[] quizAnswers;
+        /// <summary>Qual Image Target ancorou a sessão (WL03 ou QR) — variável de controle do experimento.</summary>
+        public string markerName;
         public string startedAtIso;
         public string finishedAtIso;
         public string exportedAtIso;

@@ -27,8 +27,12 @@ namespace Facens.SafetyLens.Editor
     {
         const string ScenePath = "Assets/Scenes/SafetyLensAR.unity";
         const string MarkerPath = "Assets/Markers/safetylens-equipment-target.png";
+        const string QrMarkerPath = "Assets/Markers/safetylens-qr-target.png";
         const string LibraryPath = "Assets/ReferenceImages/SafetyLensReferenceImageLibrary.asset";
         const string TargetName = "SafetyLensEquipmentTarget";
+        const string QrTargetName = "SafetyLensQrTarget";
+        /// <summary>QR impresso com 12 cm (quadrado); o WL03 continua 20 × 13,3 cm.</summary>
+        static readonly Vector2 QrMarkerSize = new Vector2(0.12f, 0.12f);
         const string SetupFlag = "Facens.SafetyLens.SetupComplete.v1";
 
         static readonly string[] ArBackgroundShaders =
@@ -89,17 +93,33 @@ namespace Facens.SafetyLens.Editor
             errors += RequireSingleArCamera();
 
             var manager = UnityEngine.Object.FindFirstObjectByType<ARTrackedImageManager>();
-            if (manager == null || manager.referenceLibrary == null || manager.referenceLibrary.count != 1)
+            if (manager == null || manager.referenceLibrary == null || manager.referenceLibrary.count != 2)
             {
-                Debug.LogError("[SafetyLens] Reference Image Library ausente ou invalida.");
+                Debug.LogError("[SafetyLens] Reference Image Library ausente ou sem as 2 imagens (WL03 + QR).");
                 errors++;
             }
-            else if (manager.referenceLibrary[0].name != TargetName)
+            else
             {
-                Debug.LogError(
-                    $"[SafetyLens] Nome do Image Target na library ('{manager.referenceLibrary[0].name}') " +
-                    $"diferente de '{TargetName}'.");
-                errors++;
+                var hasPrimary = false;
+                var hasQr = false;
+                for (var i = 0; i < manager.referenceLibrary.count; i++)
+                {
+                    var entry = manager.referenceLibrary[i].name;
+                    hasPrimary |= entry == TargetName;
+                    hasQr |= entry == QrTargetName;
+                }
+
+                if (!hasPrimary)
+                {
+                    Debug.LogError($"[SafetyLens] Library sem o Image Target principal '{TargetName}'.");
+                    errors++;
+                }
+
+                if (!hasQr)
+                {
+                    Debug.LogError($"[SafetyLens] Library sem o Image Target alternativo '{QrTargetName}'.");
+                    errors++;
+                }
             }
 
             var scenario = Resources.Load<TextAsset>("safetylens_scenario");
@@ -309,7 +329,8 @@ namespace Facens.SafetyLens.Editor
         static XRReferenceImageLibrary EnsureImageLibrary()
         {
             var existing = AssetDatabase.LoadAssetAtPath<XRReferenceImageLibrary>(LibraryPath);
-            if (existing != null && existing.count == 1) return existing;
+            // Duas entradas: WL03 (principal) + QR (alternativo). Contagem diferente = library antiga, recria.
+            if (existing != null && existing.count == 2) return existing;
 
             Directory.CreateDirectory("Assets/ReferenceImages");
             if (existing != null) AssetDatabase.DeleteAsset(LibraryPath);
@@ -318,14 +339,27 @@ namespace Facens.SafetyLens.Editor
             if (texture == null)
                 throw new InvalidOperationException($"Marcador nao encontrado: {MarkerPath}");
 
+            var qrTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(QrMarkerPath);
+            if (qrTexture == null)
+                throw new InvalidOperationException(
+                    $"Marcador QR nao encontrado: {QrMarkerPath}. Rode Tools/generate-qr-marker.py.");
+
             var library = ScriptableObject.CreateInstance<XRReferenceImageLibrary>();
             library.name = "SafetyLensReferenceImageLibrary";
             AssetDatabase.CreateAsset(library, LibraryPath);
+
             XRReferenceImageLibraryExtensions.Add(library);
             XRReferenceImageLibraryExtensions.SetName(library, 0, TargetName);
             XRReferenceImageLibraryExtensions.SetSpecifySize(library, 0, true);
             XRReferenceImageLibraryExtensions.SetSize(library, 0, new Vector2(0.20f, 0.133333f));
             XRReferenceImageLibraryExtensions.SetTexture(library, 0, texture, false);
+
+            XRReferenceImageLibraryExtensions.Add(library);
+            XRReferenceImageLibraryExtensions.SetName(library, 1, QrTargetName);
+            XRReferenceImageLibraryExtensions.SetSpecifySize(library, 1, true);
+            XRReferenceImageLibraryExtensions.SetSize(library, 1, QrMarkerSize);
+            XRReferenceImageLibraryExtensions.SetTexture(library, 1, qrTexture, false);
+
             EditorUtility.SetDirty(library);
             AssetDatabase.SaveAssets();
             return library;

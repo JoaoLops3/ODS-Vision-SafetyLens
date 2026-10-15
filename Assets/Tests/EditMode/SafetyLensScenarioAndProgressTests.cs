@@ -25,6 +25,18 @@ namespace Facens.SafetyLens.Tests
                         options = new[] { "a", "b" },
                         correctIndex = 1
                     }
+                },
+                altTargets = new[]
+                {
+                    new SafetyLensTargetLayout
+                    {
+                        name = "SafetyLensQrTarget",
+                        placements = new[]
+                        {
+                            new SafetyLensPlacement { hazardId = "HOT", u = 0.25f, v = 0.5f },
+                            new SafetyLensPlacement { hazardId = "EPI", u = 0.75f, v = 0.5f }
+                        }
+                    }
                 }
             };
         }
@@ -72,6 +84,98 @@ namespace Facens.SafetyLens.Tests
         }
 
         [Test]
+        public void ResolveUv_UsesAltLayout_FallsBackToHazardUv()
+        {
+            var s = ValidScenario();
+            var hot = s.hazards[0];
+
+            // Layout alternativo (QR) tem placement próprio.
+            var qrUv = s.ResolveUv(hot, "SafetyLensQrTarget");
+            Assert.AreEqual(0.25f, qrUv.x, 1e-5f);
+            Assert.AreEqual(0.5f, qrUv.y, 1e-5f);
+
+            // Alvo principal usa o u/v do próprio hazard.
+            var mainUv = s.ResolveUv(hot, "SafetyLensEquipmentTarget");
+            Assert.AreEqual(hot.u, mainUv.x, 1e-5f);
+            Assert.AreEqual(hot.v, mainUv.y, 1e-5f);
+
+            // Alvo desconhecido (ou nulo) também cai no u/v do hazard.
+            var unknownUv = s.ResolveUv(hot, "OutroAlvo");
+            Assert.AreEqual(hot.u, unknownUv.x, 1e-5f);
+            var nullUv = s.ResolveUv(hot, null);
+            Assert.AreEqual(hot.u, nullUv.x, 1e-5f);
+        }
+
+        [Test]
+        public void IsKnownTarget_AcceptsPrimaryAndAlt_RejectsOthers()
+        {
+            var s = ValidScenario();
+            Assert.IsTrue(s.IsKnownTarget("SafetyLensEquipmentTarget"));
+            Assert.IsTrue(s.IsKnownTarget("SafetyLensQrTarget"));
+            Assert.IsFalse(s.IsKnownTarget("Qualquer"));
+            Assert.IsFalse(s.IsKnownTarget(null));
+        }
+
+        [Test]
+        public void Validator_RejectsAltTargetMissingPlacementAndUnknownHazard()
+        {
+            var s = ValidScenario();
+            s.altTargets[0].placements = new[]
+            {
+                new SafetyLensPlacement { hazardId = "HOT", u = 0.25f, v = 0.5f },
+                new SafetyLensPlacement { hazardId = "FANTASMA", u = 0.75f, v = 0.5f }
+            };
+            var errors = SafetyLensScenarioValidator.Validate(s, "SafetyLensEquipmentTarget");
+
+            // hazardId inexistente + falta placement do EPI.
+            Assert.IsTrue(errors.Exists(e => e.Contains("FANTASMA")), string.Join("; ", errors));
+            Assert.IsTrue(errors.Exists(e => e.Contains("EPI")), string.Join("; ", errors));
+        }
+
+        [Test]
+        public void Validator_RejectsAltTargetDuplicateNameAndBadUv()
+        {
+            var s = ValidScenario();
+            s.altTargets = new[]
+            {
+                s.altTargets[0],
+                new SafetyLensTargetLayout
+                {
+                    name = "SafetyLensQrTarget",
+                    placements = new[]
+                    {
+                        new SafetyLensPlacement { hazardId = "HOT", u = 1.5f, v = 0.5f },
+                        new SafetyLensPlacement { hazardId = "EPI", u = 0.75f, v = 0.5f }
+                    }
+                }
+            };
+            var errors = SafetyLensScenarioValidator.Validate(s, "SafetyLensEquipmentTarget");
+
+            Assert.IsTrue(errors.Exists(e => e.Contains("duplicado")), string.Join("; ", errors));
+            Assert.IsTrue(errors.Exists(e => e.Contains("fora de [0,1]")), string.Join("; ", errors));
+        }
+
+        [Test]
+        public void Validator_RejectsAltTargetNamedLikePrimary()
+        {
+            var s = ValidScenario();
+            s.altTargets[0].name = "SafetyLensEquipmentTarget";
+            var errors = SafetyLensScenarioValidator.Validate(s, "SafetyLensEquipmentTarget");
+            Assert.IsTrue(errors.Exists(e => e.Contains("igual ao targetName")), string.Join("; ", errors));
+        }
+
+        [Test]
+        public void LocalPositionOnMarker_WithExternalUv_UsesProvidedAnchor()
+        {
+            var hazard = ValidScenario().hazards[0];
+            var size = new UnityEngine.Vector2(0.12f, 0.12f);
+            var pos = hazard.LocalPositionOnMarker(size, 0.2f, 0.5f);
+
+            Assert.AreEqual((0.2f - 0.5f) * 0.12f, pos.x, 1e-5f);
+            Assert.AreEqual(0f, pos.z, 1e-5f);
+        }
+
+        [Test]
         public void BuildRecord_KeepsInspectionAndQuizSeconds()
         {
             var p = new SafetyLensInspectionProgress(1);
@@ -90,6 +194,7 @@ namespace Facens.SafetyLens.Tests
                 inspectionSeconds: 30.25f,
                 quizSeconds: 15.25f,
                 performance: perf,
+                markerName: "SafetyLensQrTarget",
                 startedAtIso: "2026-01-01T00:00:00Z",
                 finishedAtIso: "2026-01-01T00:00:45Z");
 
@@ -101,6 +206,7 @@ namespace Facens.SafetyLens.Tests
             Assert.AreEqual(41f, record.fpsLow1Percent, 1e-5f);
             Assert.AreEqual(0.01f, record.framesBelow30Ratio, 1e-5f);
             Assert.AreEqual(512.5f, record.peakMemoryMb, 1e-5f);
+            Assert.AreEqual("SafetyLensQrTarget", record.markerName);
         }
 
         [Test]
