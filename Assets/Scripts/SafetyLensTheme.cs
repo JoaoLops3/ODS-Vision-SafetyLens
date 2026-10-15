@@ -36,6 +36,8 @@ namespace Facens.SafetyLens
         public static readonly Color ReticleStroke = new Color(1f, 1f, 1f, 0.92f);
 
         public static readonly Color HazardAlertActive = Hex(0xE5372A);
+        /// <summary>Zona vermelha de alerta (artigo): disco translúcido no plano do marcador. Alpha vem dos tokens ArZone*.</summary>
+        public static readonly Color HazardZone = Hex(0xE5372A);
         public static readonly Color HazardEpiActive = Hex(0x2B7BF0);
         public static readonly Color HazardDone = Hex(0x1E9E6E);
         public static readonly Color HazardIdle = Hex(0x56606C);
@@ -89,6 +91,15 @@ namespace Facens.SafetyLens
         public static float RingDiameterFor(bool isEpi) =>
             isEpi ? ArHelmetRingDiameter : ArSignRingDiameter;
         public const float ArRingLift = 0.001f;
+        /// <summary>Zona de alerta = diâmetro do círculo da letra (2,0 cm): marca a área sem cobrir ENERGIA/PROTECAO.</summary>
+        public const float ArZoneDiameter = 0.020f;
+        /// <summary>Abaixo da placa (ArMarkerLift) e acima da arte, para não z-fight com nenhum dos dois.</summary>
+        public const float ArZoneLift = 0.0005f;
+        public const float ArZoneActiveAlpha = 0.45f;
+        public const float ArZoneIdleAlpha = 0.16f;
+        public const float ArZoneDoneAlpha = 0.10f;
+        /// <summary>Pulso de opacidade da zona ativa (desligado com reduce motion).</summary>
+        public const float ArZonePulseAlphaAmplitude = 0.18f;
         public const float ArDoneRingScale = 0.85f;
         public const float ArLabelGap = 0.003f;
         public const float ArLabelScale = 0.0022f;

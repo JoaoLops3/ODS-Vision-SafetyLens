@@ -42,6 +42,15 @@ namespace Facens.SafetyLens
                        realtimeSinceStartup * SafetyLensTheme.ArPulseSpeed * Mathf.PI));
         }
 
+        /// <summary>Alpha pulsante da zona de alerta ativa. Com reduce motion, fica no alpha base.</summary>
+        public static float ZonePulseAlpha(float baseAlpha, float realtimeSinceStartup)
+        {
+            if (PrefersReducedMotion) return baseAlpha;
+            return baseAlpha + SafetyLensTheme.ArZonePulseAlphaAmplitude *
+                   (0.5f + 0.5f * Mathf.Sin(
+                       realtimeSinceStartup * SafetyLensTheme.ArPulseSpeed * Mathf.PI));
+        }
+
 #if UNITY_ANDROID && !UNITY_EDITOR
         static float ReadAndroidAnimatorDurationScale()
         {

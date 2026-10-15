@@ -16,6 +16,7 @@ namespace Facens.SafetyLens
         public const string Pinch = "pinch";
         public const string Generic = "generic";
         const string RingKey = "__ring";
+        const string ZoneKey = "__zone";
 
         const int SignSize = 256;
         const int RingSize = 128;
@@ -29,11 +30,15 @@ namespace Facens.SafetyLens
             foreach (var id in pictograms)
                 Queue(Normalize(id), SignSize, (x, y) => SamplePictogram(Normalize(id), x, y));
             Queue(RingKey, RingSize, SampleRing);
+            Queue(ZoneKey, RingSize, SampleZone);
         }
 
         public static Texture2D GetSign(string pictogram) => Resolve(Normalize(pictogram), SignSize);
 
         public static Texture2D GetRing() => Resolve(RingKey, RingSize);
+
+        /// <summary>Disco da zona de alerta (branco; a cor/alpha vem do material).</summary>
+        public static Texture2D GetZone() => Resolve(ZoneKey, RingSize);
 
         public static string Normalize(string pictogram)
         {
@@ -58,9 +63,12 @@ namespace Facens.SafetyLens
 
             if (!Pending.TryGetValue(key, out var task))
             {
-                Func<float, float, Color> sampler = key == RingKey
-                    ? SampleRing
-                    : (x, y) => SamplePictogram(key, x, y);
+                Func<float, float, Color> sampler = key switch
+                {
+                    RingKey => SampleRing,
+                    ZoneKey => SampleZone,
+                    _ => (x, y) => SamplePictogram(key, x, y)
+                };
                 Queue(key, size, sampler);
                 task = Pending[key];
             }
@@ -191,6 +199,18 @@ namespace Facens.SafetyLens
             var ring = 1f - Mathf.Clamp01(Mathf.Abs(r - 0.42f) / 0.05f);
             var glow = Mathf.Clamp01((0.48f - r) / 0.48f) * 0.18f;
             var a = Mathf.Max(ring * ring, glow);
+            return new Color(1f, 1f, 1f, a);
+        }
+
+        // ----- Zona de alerta (disco preenchido; cor/alpha vêm do material) -----
+
+        static Color SampleZone(float x, float y)
+        {
+            var r = Vector2.Distance(new Vector2(x, y), new Vector2(0.5f, 0.5f));
+            // Miolo preenchido com borda suave + aro mais denso para a zona não virar só um borrão.
+            var fill = 1f - Mathf.SmoothStep(0.40f, 0.48f, r);
+            var rim = 1f - Mathf.Clamp01(Mathf.Abs(r - 0.44f) / 0.04f);
+            var a = Mathf.Max(fill * 0.85f, rim);
             return new Color(1f, 1f, 1f, a);
         }
 

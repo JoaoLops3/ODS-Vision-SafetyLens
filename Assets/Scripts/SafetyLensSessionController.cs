@@ -437,6 +437,13 @@ namespace Facens.SafetyLens
             {
                 if (!_visuals.TryGetValue(hazard.id, out var visual) || visual.Root == null) continue;
                 visual.Root.localPosition = hazard.LocalPositionOnMarker(size);
+                if (visual.Zone != null)
+                {
+                    // Zona no plano da arte, sob a placa: mesmo UV, lift próprio.
+                    var zonePos = hazard.LocalPositionOnMarker(size);
+                    zonePos.y = SafetyLensTheme.ArZoneLift;
+                    visual.Zone.localPosition = zonePos;
+                }
             }
 
             FaceHazardsTowardCamera();
@@ -816,6 +823,15 @@ namespace Facens.SafetyLens
                 }
 
                 visual.Root.localScale = Vector3.one * scale;
+                if (visual.ZoneMaterial != null)
+                {
+                    // Zona não muda de tamanho (orçamento da letra); o estado entra só na opacidade.
+                    var zoneColor = SafetyLensTheme.HazardZone;
+                    zoneColor.a = done
+                        ? SafetyLensTheme.ArZoneDoneAlpha
+                        : active ? SafetyLensTheme.ArZoneActiveAlpha : SafetyLensTheme.ArZoneIdleAlpha;
+                    visual.ZoneMaterial.color = zoneColor;
+                }
                 if (visual.Ring != null)
                 {
                     // Anel pulsante colorido = item da vez; anel verde parado = já identificado.
@@ -828,17 +844,28 @@ namespace Facens.SafetyLens
             }
         }
 
-        /// <summary>Pulso no anel do item ativo. Âncoras A/B/C: <see cref="AlignContentToMarker"/> em onBeforeRender.</summary>
+        /// <summary>Pulso do anel e da zona do item ativo. Âncoras A/B/C: <see cref="AlignContentToMarker"/> em onBeforeRender.</summary>
         void LateUpdate()
         {
             if (Phase != AppPhase.RiskInspection || _visuals.Count == 0) return;
 
             var current = CurrentHazard;
-            if (current == null || !_visuals.TryGetValue(current.id, out var visual) || visual.Ring == null) return;
-            if (!visual.Ring.gameObject.activeSelf) return;
+            if (current == null || !_visuals.TryGetValue(current.id, out var visual)) return;
 
-            var pulse = SafetyLensAccessibility.ActiveRingPulseScale(Time.realtimeSinceStartup);
-            visual.Ring.localScale = Vector3.one * (visual.RingDiameter * pulse);
+            if (visual.Ring != null && visual.Ring.gameObject.activeSelf)
+            {
+                var pulse = SafetyLensAccessibility.ActiveRingPulseScale(Time.realtimeSinceStartup);
+                visual.Ring.localScale = Vector3.one * (visual.RingDiameter * pulse);
+            }
+
+            if (visual.ZoneMaterial != null)
+            {
+                // Pulso de opacidade (fica constante com reduce motion).
+                var zoneColor = SafetyLensTheme.HazardZone;
+                zoneColor.a = SafetyLensAccessibility.ZonePulseAlpha(
+                    SafetyLensTheme.ArZoneActiveAlpha, Time.realtimeSinceStartup);
+                visual.ZoneMaterial.color = zoneColor;
+            }
         }
 
         void OnDestroy()

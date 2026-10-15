@@ -15,6 +15,9 @@ namespace Facens.SafetyLens
         public Transform Ring;
         public Material RingMaterial;
         public Color ActiveRingColor;
+        /// <summary>Zona vermelha de alerta (artigo): disco deitado no plano do marcador, sob a placa.</summary>
+        public Transform Zone;
+        public Material ZoneMaterial;
         public GameObject Label;
         /// <summary>Diâmetro do anel (placa vs capacete) em metros, sem escala de estado.</summary>
         public float RingDiameter;
@@ -27,8 +30,10 @@ namespace Facens.SafetyLens
         {
             if (Material != null) Object.Destroy(Material);
             if (RingMaterial != null) Object.Destroy(RingMaterial);
+            if (ZoneMaterial != null) Object.Destroy(ZoneMaterial);
             Material = null;
             RingMaterial = null;
+            ZoneMaterial = null;
         }
     }
 
@@ -71,7 +76,42 @@ namespace Facens.SafetyLens
 
             BuildRing(hazard, visual);
             BuildLabel(hazard, visual);
+            if (hazard.IsAlert) BuildZone(hazard, visual, parent);
             return visual;
+        }
+
+        /// <summary>
+        /// Zona vermelha de alerta (interface do artigo): disco translúcido deitado no plano do
+        /// marcador, sob a placa ISO. Fica fora do Root porque o Root billboarda para a câmera
+        /// e a zona precisa permanecer na arte. A posição é sincronizada pelo SessionController.
+        /// </summary>
+        static void BuildZone(SafetyLensHazard hazard, SafetyLensHazardVisual visual, Transform parent)
+        {
+            var zone = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            zone.name = $"Zone_{hazard.id}";
+            Object.Destroy(zone.GetComponent<Collider>());
+            zone.transform.SetParent(parent, false);
+
+            var pos = hazard.LocalPositionOnMarker(
+                new Vector2(SafetyLensTheme.ArMarkerWidth, SafetyLensTheme.ArMarkerHeight));
+            pos.y = SafetyLensTheme.ArZoneLift;
+            zone.transform.localPosition = pos;
+            // Quad olha +Z; -90° em X deixa o disco deitado olhando +Y (para fora da arte).
+            zone.transform.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            zone.transform.localScale = Vector3.one * SafetyLensTheme.ArZoneDiameter;
+
+            var material = Instantiate(RingMaterialPath, TransparentShader);
+            material.mainTexture = SafetyLensPictograms.GetZone();
+            var color = SafetyLensTheme.HazardZone;
+            color.a = SafetyLensTheme.ArZoneIdleAlpha;
+            material.color = color;
+            var renderer = zone.GetComponent<Renderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+
+            visual.Zone = zone.transform;
+            visual.ZoneMaterial = material;
         }
 
         /// <summary>

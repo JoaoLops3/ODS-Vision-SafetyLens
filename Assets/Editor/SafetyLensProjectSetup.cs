@@ -738,6 +738,15 @@ namespace Facens.SafetyLens.Editor
                         $"Anel {h.id}",
                         SafetyLensTheme.ArSignRingDiameter * SafetyLensTheme.ArActiveScale * pulse,
                         dropTowardLabel);
+                    // Zona não escala com o estado — valida o diâmetro cru.
+                    errors += ValidateOverlayFitsLetter($"Zona {h.id}", SafetyLensTheme.ArZoneDiameter, dropTowardLabel);
+                    if (SafetyLensTheme.ArZoneDiameter > SafetyLensTheme.ArLetterDiameter + 1e-4f)
+                    {
+                        Debug.LogError(
+                            $"[SafetyLens] Zona {h.id} ({SafetyLensTheme.ArZoneDiameter * 100f:0.0} cm) maior que o " +
+                            $"círculo da letra ({SafetyLensTheme.ArLetterDiameter * 100f:0.0} cm). Reduza ArZoneDiameter.");
+                        errors++;
+                    }
                 }
                 else if (h.IsEpi)
                 {
