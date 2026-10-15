@@ -51,6 +51,18 @@ Posição dos hazards: **UV no marcador** (`u`/`v` 0–1 → letras A/B/C), conv
 `SafetyLensHazard.LocalPositionOnMarker` para o espaço local do `ARTrackedImage`.
 Ajuste fino opcional em metros (`x`/`y` no plano, `z` = lift). Ver `docs/CUSTOMIZACAO.md`.
 
+### Tracking Limited (P1-6)
+
+`TrackingLossGate` (classe pura) + polling em `Update` (`UpdateTargetVisibility`):
+
+| Estado | Condição | UI / RA |
+|---|---|---|
+| **Tracking** | `trackingState == Tracking` | Conteúdo visível, toque e confirmar liberados |
+| **Unstable** | Limited/None dentro de 1,5 s **e** 10 frames | Conteúdo visível, seleção preservada, banner amarelo, toque/confirmar bloqueados |
+| **Lost** | Passou o prazo | `SetTargetFound(false)`: esconde overlays, zera seleção, “Marcador perdido” |
+
+Fase e cronômetro (`_startedAt`) **não** pausam nem resetam. Durante Scanning o gate é resetado (sem banner). Ao entrar no Quiz o gate reseta e a câmera desliga.
+
 ## Validação no Editor
 
 **SafetyLens → Validar projeto** exige:
@@ -58,5 +70,6 @@ Ajuste fino opcional em metros (`x`/`y` no plano, `z` = lift). Ver `docs/CUSTOMI
 - Cena (ARSession, XROrigin, TrackedImageManager, overlays, câmera única)
 - Reference Image Library com nome `SafetyLensEquipmentTarget`
 - Cenário com `targetName` igual + UVs em `[0,1]`
+- Overlay: meia-altura ativa + deslocamento de `v` rumo aos rótulos ≤ 2,03 cm; capacete ativo < círculo C (2,0 cm)
 - **Android:** ARCore Loader
 - **iOS:** ARKit Loader + Metal only + `cameraUsageDescription`

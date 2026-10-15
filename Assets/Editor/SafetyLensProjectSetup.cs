@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.SceneManagement;
 using UnityEditor.XR.ARCore;
+using UnityEditor.XR.ARKit;
 using UnityEditor.XR.ARSubsystems;
 using UnityEditor.XR.Management;
 using UnityEditor.XR.Management.Metadata;
@@ -112,31 +113,15 @@ namespace Facens.SafetyLens.Editor
                 try
                 {
                     var parsed = JsonUtility.FromJson<SafetyLensScenario>(scenario.text);
-                    if (parsed == null || parsed.hazards == null || parsed.hazards.Length == 0)
+                    var schemaErrors = SafetyLensScenarioValidator.Validate(parsed, TargetName);
+                    foreach (var err in schemaErrors)
                     {
-                        Debug.LogError("[SafetyLens] Cenario sem hazards.");
+                        Debug.LogError($"[SafetyLens] {err}");
                         errors++;
                     }
-                    else if (string.IsNullOrWhiteSpace(parsed.targetName) || parsed.targetName != TargetName)
-                    {
-                        Debug.LogError(
-                            $"[SafetyLens] scenario.targetName ('{parsed.targetName}') deve ser '{TargetName}' " +
-                            "(mesmo nome da Reference Image Library).");
-                        errors++;
-                    }
-                    else
-                    {
-                        foreach (var h in parsed.hazards)
-                        {
-                            if (h.u < 0f || h.u > 1f || h.v < 0f || h.v > 1f)
-                            {
-                                Debug.LogError(
-                                    $"[SafetyLens] Hazard '{h.id}' com UV fora de [0,1]: u={h.u}, v={h.v}. " +
-                                    "Ancoras sao fracoes do marcador (A/B/C), nao metros de HUD.");
-                                errors++;
-                            }
-                        }
-                    }
+
+                    if (schemaErrors.Count == 0)
+                        errors += ValidateHazardOverlays(parsed);
                 }
                 catch (Exception ex)
                 {
@@ -173,11 +158,28 @@ namespace Facens.SafetyLens.Editor
                 errors++;
             }
 
+            var arKit = ARKitSettings.GetOrCreateSettings();
+            if (arKit.requirement != ARKitSettings.Requirement.Required)
+            {
+                Debug.LogError(
+                    "[SafetyLens] [iOS] ARKitSettings.requirement esta Optional. " +
+                    "Deve ser Required (app so instala em devices com ARKit).");
+                errors++;
+            }
+
+            if (!ReadIosRequiresArKitSupport())
+            {
+                Debug.LogError(
+                    "[SafetyLens] [iOS] PlayerSettings.iOS.requiresARKitSupport esta false. " +
+                    "Deve ser true.");
+                errors++;
+            }
+
             if (errors == 0)
             {
                 Debug.Log(
                     "[SafetyLens] VALIDACAO OK: cena + library + cenario UV; " +
-                    "Android=ARCore; iOS=ARKit+Metal+camera privacy.");
+                    "Android=ARCore; iOS=ARKit+Required+Metal+camera privacy.");
             }
             else
                 Debug.LogError($"[SafetyLens] VALIDACAO FALHOU: {errors} problema(s).");
@@ -449,6 +451,44 @@ namespace Facens.SafetyLens.Editor
                 ios.AssignedSettings,
                 "UnityEngine.XR.ARKit.ARKitLoader",
                 BuildTargetGroup.iOS);
+
+            // Paridade com ConfigureAndroid (ARCore Required): Info.plist ganha UIRequiredDeviceCapabilities=arkit.
+            var arKit = ARKitSettings.GetOrCreateSettings();
+            if (ARKitSettings.currentSettings == null)
+                ARKitSettings.currentSettings = arKit;
+            arKit.requirement = ARKitSettings.Requirement.Required;
+            EditorUtility.SetDirty(arKit);
+
+            // API Unity e internal em algumas builds — reflection mantém ProjectSettings.iOSRequireARKit=1.
+            SetIosRequiresArKitSupport(true);
+        }
+
+        /// <summary>
+        /// PlayerSettings.iOS.requiresARKitSupport e internal no Editor; lemos via reflection.
+        /// </summary>
+        static bool ReadIosRequiresArKitSupport()
+        {
+            var prop = typeof(PlayerSettings.iOS).GetProperty(
+                "requiresARKitSupport",
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (prop == null) return false;
+            return prop.GetValue(null) is true;
+        }
+
+        static void SetIosRequiresArKitSupport(bool value)
+        {
+            var prop = typeof(PlayerSettings.iOS).GetProperty(
+                "requiresARKitSupport",
+                BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            if (prop == null || !prop.CanWrite)
+            {
+                Debug.LogWarning(
+                    "[SafetyLens] PlayerSettings.iOS.requiresARKitSupport indisponivel; " +
+                    "marque Requires ARKit support no Inspector do Player Settings.");
+                return;
+            }
+
+            prop.SetValue(null, value);
         }
 
         static XRGeneralSettingsPerBuildTarget EnsureXRGeneralSettings()
@@ -675,6 +715,66 @@ namespace Facens.SafetyLens.Editor
                 path = t.name + "/" + path;
             }
             return path;
+        }
+
+        /// <summary>
+        /// Placa/anel: meia-altura ativa + deslocamento de v na direção do rótulo (abaixo do círculo)
+        /// ≤ distância centro→topo do texto. Capacete: footprint ativo &lt; diâmetro do C.
+        /// </summary>
+        static int ValidateHazardOverlays(SafetyLensScenario scenario)
+        {
+            var errors = 0;
+            var pulse = 1f + SafetyLensTheme.ArPulseAmplitude;
+            foreach (var h in scenario.hazards)
+            {
+                var dropTowardLabel = (SafetyLensTheme.ArLetterCenterV - h.v) * SafetyLensTheme.ArMarkerHeight;
+                if (h.IsAlert)
+                {
+                    errors += ValidateOverlayFitsLetter(
+                        $"Placa {h.id}",
+                        SafetyLensTheme.ArSignWidth * SafetyLensTheme.ArActiveScale,
+                        dropTowardLabel);
+                    errors += ValidateOverlayFitsLetter(
+                        $"Anel {h.id}",
+                        SafetyLensTheme.ArSignRingDiameter * SafetyLensTheme.ArActiveScale * pulse,
+                        dropTowardLabel);
+                }
+                else if (h.IsEpi)
+                {
+                    var helmet = SafetyLensTheme.ArHelmetWidth * SafetyLensTheme.ArActiveScale;
+                    errors += ValidateOverlayFitsLetter($"Capacete {h.id}", helmet, dropTowardLabel);
+                    if (helmet > SafetyLensTheme.ArLetterDiameter)
+                    {
+                        Debug.LogError(
+                            $"[SafetyLens] Capacete {h.id} ({helmet * 100f:0.0} cm) cobre o círculo C " +
+                            $"({SafetyLensTheme.ArLetterDiameter * 100f:0.0} cm). Reduza ArHelmetWidth.");
+                        errors++;
+                    }
+
+                    errors += ValidateOverlayFitsLetter(
+                        $"Anel {h.id}",
+                        SafetyLensTheme.ArHelmetRingDiameter * SafetyLensTheme.ArActiveScale * pulse,
+                        dropTowardLabel);
+                }
+            }
+
+            return errors;
+        }
+
+        static int ValidateOverlayFitsLetter(string name, float sizeMeters, float displacementTowardLabelMeters)
+        {
+            var reach = sizeMeters * 0.5f + Mathf.Max(0f, displacementTowardLabelMeters);
+            var budget = SafetyLensTheme.ArLetterToLabel;
+            if (reach > budget - 0.001f)
+            {
+                Debug.LogError(
+                    $"[SafetyLens] {name}: meia-altura {sizeMeters * 50f:0.00} cm + deslocamento " +
+                    $"{displacementTowardLabelMeters * 100f:0.00} cm = {reach * 100f:0.00} cm " +
+                    $"ultrapassa o rótulo ({budget * 100f:0.00} cm do centro da letra).");
+                return 1;
+            }
+
+            return 0;
         }
 
         /// <summary>

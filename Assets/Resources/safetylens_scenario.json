@@ -11,7 +11,7 @@
       "instruction": "Toque na placa de alerta: superfície quente / risco de queimadura.",
       "pictogram": "hot",
       "u": 0.238,
-      "v": 0.530,
+      "v": 0.470,
       "x": 0.0,
       "y": 0.0,
       "z": 0.0
@@ -23,7 +23,7 @@
       "instruction": "Toque na placa de alerta: risco de pinçamento mecânico.",
       "pictogram": "pinch",
       "u": 0.500,
-      "v": 0.530,
+      "v": 0.470,
       "x": 0.0,
       "y": 0.0,
       "z": 0.0
@@ -35,10 +35,10 @@
       "instruction": "Confirme o EPI obrigatório: capacete de segurança.",
       "model": "helmet",
       "u": 0.763,
-      "v": 0.528,
+      "v": 0.493,
       "x": 0.0,
       "y": 0.0,
-      "z": 0.002
+      "z": 0.0
     }
   ],
   "quiz": [

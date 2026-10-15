@@ -16,6 +16,8 @@ namespace Facens.SafetyLens
         public Material RingMaterial;
         public Color ActiveRingColor;
         public GameObject Label;
+        /// <summary>Diâmetro do anel (placa vs capacete) em metros, sem escala de estado.</summary>
+        public float RingDiameter;
         /// <summary>Modelo 3D (capacete) — precisa ser "levantado" quando o marcador está em pé.</summary>
         public bool IsModel;
         /// <summary>Tamanho do modelo em espaço local, medido na criação (sem rotação).</summary>
@@ -203,7 +205,7 @@ namespace Facens.SafetyLens
                 else bounds.Encapsulate(r.bounds);
             }
 
-            // Token ArHelmetWidth é a fonte da verdade — o prefab pode ter sido gerado com valor velho.
+            // Token ArHelmetWidth é a fonte da verdade em runtime — não depende de regenerar o prefab.
             if (hasBounds)
             {
                 var footprint = Mathf.Max(bounds.size.x, bounds.size.z);
@@ -237,7 +239,8 @@ namespace Facens.SafetyLens
             ring.transform.SetParent(visual.Root, false);
             ring.transform.localRotation = Quaternion.identity;
             ring.transform.localPosition = new Vector3(0f, 0f, -SafetyLensTheme.ArRingLift);
-            ring.transform.localScale = Vector3.one * SafetyLensTheme.ArRingDiameter;
+            visual.RingDiameter = SafetyLensTheme.RingDiameterFor(hazard.IsEpi);
+            ring.transform.localScale = Vector3.one * visual.RingDiameter;
 
             var material = Instantiate(RingMaterialPath, TransparentShader);
             material.mainTexture = SafetyLensPictograms.GetRing();

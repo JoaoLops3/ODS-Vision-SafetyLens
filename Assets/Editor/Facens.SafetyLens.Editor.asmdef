@@ -1,0 +1,26 @@
+{
+    "name": "Facens.SafetyLens.Editor",
+    "rootNamespace": "Facens.SafetyLens.Editor",
+    "references": [
+        "Facens.SafetyLens",
+        "Unity.XR.ARFoundation",
+        "Unity.XR.ARFoundation.Editor",
+        "Unity.XR.ARSubsystems",
+        "Unity.XR.ARSubsystems.Editor",
+        "Unity.XR.ARCore.Editor",
+        "Unity.XR.ARKit.Editor",
+        "Unity.XR.CoreUtils",
+        "Unity.XR.Management",
+        "Unity.XR.Management.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "noEngineReferences": false
+}

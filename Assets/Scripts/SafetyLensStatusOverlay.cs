@@ -31,6 +31,7 @@ namespace Facens.SafetyLens
         int _stylesForWidth = -1;
         AppPhase _lastPhase = AppPhase.Identification;
         Vector2 _historyScroll;
+        SafetyLensSessionEntry _pendingDelete;
 
         GUIStyle _display, _title, _bodyLarge, _body, _bodyStrong, _caption, _captionStrong, _overline;
         GUIStyle _button, _field, _score, _metricValue, _badge, _glyph, _hitArea;
@@ -149,6 +150,7 @@ namespace Facens.SafetyLens
             _history.Clear();
             _history.AddRange(SafetyLensSessionStore.ListSessions());
             _historyScroll = Vector2.zero;
+            _pendingDelete = null;
         }
 
         // ---------- Telas ----------
@@ -280,6 +282,8 @@ namespace Facens.SafetyLens
             Block(statsPill);
 
             var toastY = top + U(T.TouchMin) + U(T.SpaceMd);
+            toastY = DrawArAvailabilityBanner(sa, toastY);
+            toastY = DrawTrackingBanner(sa, toastY);
             DrawToast(sa, toastY);
 
             var searching = c.Phase == AppPhase.Scanning || !c.TargetFound;
@@ -571,7 +575,7 @@ namespace Facens.SafetyLens
             Label(new Rect(x + U(T.TouchMin) + U(T.SpaceMd), y + U(4f), w - U(T.TouchMin), U(22f)), "Histórico", _title);
             Label(
                 new Rect(x + U(T.TouchMin) + U(T.SpaceMd), y + U(28f), w - U(T.TouchMin), U(18f)),
-                _history.Count == 0 ? "Nenhuma sessão ainda" : $"{_history.Count} sessão(ões) neste iPhone",
+                _history.Count == 0 ? "Nenhuma sessão ainda" : $"{_history.Count} sessão(ões) neste aparelho",
                 _caption);
             y += U(T.TouchMin) + U(T.SpaceLg);
 
@@ -595,10 +599,13 @@ namespace Facens.SafetyLens
                 return;
             }
 
-            // Altura total do conteúdo: cada linha ~88pt + gap.
+            // Altura total do conteúdo: cada linha ~92pt (+ confirmação) + gap.
             var rowH = U(92f);
+            var confirmExtra = U(48f);
             var gap = U(T.SpaceMd);
-            var contentH = _history.Count * (rowH + gap);
+            var contentH = 0f;
+            foreach (var entry in _history)
+                contentH += rowH + gap + (_pendingDelete == entry ? confirmExtra : 0f);
             _historyScroll = GUI.BeginScrollView(
                 new Rect(x, listTop, w, listH),
                 _historyScroll,
@@ -610,8 +617,16 @@ namespace Facens.SafetyLens
             var rowW = w - U(8f);
             for (var i = 0; i < _history.Count; i++)
             {
-                DrawHistoryRow(new Rect(0f, rowY, rowW, rowH), _history[i]);
-                rowY += rowH + gap;
+                var entry = _history[i];
+                DrawHistoryRow(new Rect(0f, rowY, rowW, rowH), entry);
+                rowY += rowH;
+                if (_pendingDelete == entry)
+                {
+                    DrawHistoryDeleteConfirm(new Rect(0f, rowY, rowW, confirmExtra), entry);
+                    rowY += confirmExtra;
+                }
+
+                rowY += gap;
             }
 
             GUI.EndScrollView();
@@ -632,8 +647,8 @@ namespace Facens.SafetyLens
             Stroke(r, T.Border, U(T.StrokeThin), U(T.RadiusMd));
 
             var pad = U(T.SpaceMd);
-            var shareW = U(96f);
-            var textW = r.width - pad * 2f - shareW - U(T.SpaceSm);
+            var btnW = U(72f);
+            var textW = r.width - pad * 2f - btnW * 2f - U(T.SpaceSm) * 2f;
 
             Label(new Rect(r.x + pad, r.y + pad, textW, U(22f)), record.participantId, _bodyStrong);
             Label(
@@ -644,9 +659,29 @@ namespace Facens.SafetyLens
             var meta = $"{FormatTime(record.elapsedSeconds)}  ·  {record.errorCount} erro(s)  ·  quiz {record.quizCorrect}/{record.quizTotal}";
             Label(new Rect(r.x + pad, r.y + pad + U(44f), textW, U(20f)), meta, _captionStrong);
 
-            var share = new Rect(r.xMax - pad - shareW, r.y + (r.height - U(40f)) * 0.5f, shareW, U(40f));
+            var share = new Rect(r.xMax - pad - btnW, r.y + (r.height - U(40f)) * 0.5f, btnW, U(40f));
+            var del = new Rect(share.x - U(T.SpaceSm) - btnW, share.y, btnW, U(40f));
+            if (SecondaryButton(del, "Apagar", true, compact: true))
+                _pendingDelete = entry;
             if (SecondaryButton(share, "CSV", true, compact: true))
                 _controller.ShareSessionCsv(entry);
+        }
+
+        void DrawHistoryDeleteConfirm(Rect r, SafetyLensSessionEntry entry)
+        {
+            Label(new Rect(r.x + U(T.SpaceMd), r.y + U(4f), r.width * 0.5f, U(36f)), "Apagar esta sessão?", _captionStrong);
+            var no = new Rect(r.xMax - U(T.SpaceMd) - U(72f) * 2f - U(T.SpaceSm), r.y + U(4f), U(72f), U(36f));
+            var yes = new Rect(r.xMax - U(T.SpaceMd) - U(72f), r.y + U(4f), U(72f), U(36f));
+            if (SecondaryButton(no, "Não", true, compact: true))
+                _pendingDelete = null;
+            if (PrimaryButton(yes, "Sim"))
+            {
+                if (_controller.DeleteSession(entry))
+                {
+                    _pendingDelete = null;
+                    RefreshHistory();
+                }
+            }
         }
 
         // ---------- Componentes ----------
@@ -701,6 +736,36 @@ namespace Facens.SafetyLens
             Stroke(r, T.Border, U(T.StrokeThin), U(T.RadiusMd));
             Label(new Rect(r.x, r.y + U(T.SpaceLg), r.width, U(30f)), value, _metricValue);
             Label(new Rect(r.x, r.y + U(52f), r.width, U(18f)), label, Centered(_caption));
+        }
+
+        /// <summary>P1-8: device sem AR / sessão que não sobe. Banner vermelho, não bloqueia toque do ×.</summary>
+        float DrawArAvailabilityBanner(Rect sa, float y)
+        {
+            var msg = _controller.ArAvailabilityMessage;
+            if (string.IsNullOrEmpty(msg)) return y;
+            return DrawStatusBanner(sa, y, msg, T.Danger, OnDark(_bodyStrong));
+        }
+
+        /// <summary>Banner persistente em Unstable. Não entra em BlockingRects (não intercepta toque).</summary>
+        float DrawTrackingBanner(Rect sa, float y)
+        {
+            var msg = _controller.TargetStatusMessage;
+            if (string.IsNullOrEmpty(msg)) return y;
+            return DrawStatusBanner(sa, y, msg, T.Brand, Colored(_bodyStrong, T.OnBrand));
+        }
+
+        float DrawStatusBanner(Rect sa, float y, string msg, Color fill, GUIStyle style)
+        {
+            style = Centered(style);
+            var maxW = sa.width - U(T.SpaceLg) * 2f;
+            var textW = Mathf.Min(MeasureWidth(msg, style), maxW - U(T.SpaceXl) * 2f);
+            var textH = Measure(msg, style, textW);
+            var banner = new Rect(
+                sa.x + (sa.width - textW - U(T.SpaceXl) * 2f) * 0.5f, y,
+                textW + U(T.SpaceXl) * 2f, textH + U(T.SpaceMd) * 2f);
+            Fill(banner, fill, U(T.RadiusMd));
+            Label(new Rect(banner.x + U(T.SpaceXl), banner.y + U(T.SpaceMd), textW, textH), msg, style);
+            return y + banner.height + U(T.SpaceSm);
         }
 
         void DrawToast(Rect sa, float y)

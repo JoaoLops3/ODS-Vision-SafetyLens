@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -121,6 +122,38 @@ namespace Facens.SafetyLens
         public static bool CanShareLastCsv() =>
             !string.IsNullOrEmpty(LastCsvPath) && File.Exists(LastCsvPath);
 
+        /// <summary>Apaga o par JSON/CSV da sessão. Não toca em outros arquivos.</summary>
+        public static bool DeleteSession(SafetyLensSessionEntry entry)
+        {
+            if (entry == null) return false;
+            var ok = true;
+            ok &= TryDeleteFile(entry.JsonPath);
+            ok &= TryDeleteFile(entry.CsvPath);
+            if (!string.IsNullOrEmpty(LastJsonPath)
+                && string.Equals(LastJsonPath, entry.JsonPath, StringComparison.Ordinal))
+            {
+                LastJsonPath = string.Empty;
+                LastCsvPath = string.Empty;
+            }
+
+            return ok;
+        }
+
+        static bool TryDeleteFile(string path)
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return true;
+            try
+            {
+                File.Delete(path);
+                return true;
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                Debug.LogWarning($"[SafetyLens] Falha ao apagar {path}: {ex.Message}");
+                return false;
+            }
+        }
+
         static int CompareNewestFirst(SafetyLensSessionEntry a, SafetyLensSessionEntry b)
         {
             var aKey = a.Record.finishedAtIso ?? a.Record.exportedAtIso ?? string.Empty;
@@ -130,7 +163,8 @@ namespace Facens.SafetyLens
             return string.CompareOrdinal(b.JsonPath, a.JsonPath);
         }
 
-        static string BuildCsv(IReadOnlyList<SafetyLensSessionRecord> records)
+        /// <summary>Exposto a testes EditMode via InternalsVisibleTo.</summary>
+        internal static string BuildCsv(IReadOnlyList<SafetyLensSessionRecord> records)
         {
             var sb = new StringBuilder();
             sb.AppendLine(
@@ -139,10 +173,11 @@ namespace Facens.SafetyLens
             {
                 if (record == null) continue;
                 var answers = record.quizAnswers == null ? string.Empty : string.Join("|", record.quizAnswers);
+                // InvariantCulture: em pt-BR, F2 viraria "45,5" e quebraria o delimitador CSV.
                 sb.Append(Escape(record.participantId)).Append(',')
                     .Append(Escape(record.scenarioId)).Append(',')
                     .Append(Escape(record.scenarioTitle)).Append(',')
-                    .Append(record.elapsedSeconds.ToString("F2")).Append(',')
+                    .Append(record.elapsedSeconds.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
                     .Append(record.errorCount).Append(',')
                     .Append(record.hazardsConfirmed).Append(',')
                     .Append(record.hazardsTotal).Append(',')
@@ -157,7 +192,7 @@ namespace Facens.SafetyLens
             return sb.ToString();
         }
 
-        static string Escape(string value)
+        internal static string Escape(string value)
         {
             if (string.IsNullOrEmpty(value)) return string.Empty;
             if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
@@ -165,7 +200,8 @@ namespace Facens.SafetyLens
             return value;
         }
 
-        static string SanitizeFilePart(string value)
+        /// <summary>Prefixo do arquivo de export. Diferente de <see cref="SafetyLensSessionController.SanitizeParticipantId"/>.</summary>
+        internal static string SanitizeFilePart(string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return "anon";
             var chars = value.Trim().ToCharArray();

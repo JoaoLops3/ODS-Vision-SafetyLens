@@ -55,16 +55,39 @@ namespace Facens.SafetyLens
         /// <summary>Tamanho físico do alvo (mesmo valor da XR Reference Image Library).</summary>
         public const float ArMarkerWidth = 0.20f;
         public const float ArMarkerHeight = 0.133333f;
-        /// <summary>Elevação padrão das placas fora do plano do marcador (metros).</summary>
-        public const float ArMarkerLift = 0.008f;
-        /// <summary>EPI 3D: só o necessário para não z-fight com a arte — assenta na frente da letra.</summary>
-        public const float ArHelmetLift = 0.002f;
+        /// <summary>
+        /// Elevação das placas fora do plano (metros). Billboard a 30° desliza ~lift / tan(30°)
+        /// na arte; 2 mm ≈ 3,5 mm de aparente “subida” — o restante da compensação está no `v` do JSON.
+        /// </summary>
+        public const float ArMarkerLift = 0.002f;
+        /// <summary>EPI 3D: mínimo para não z-fight; a base do mesh assenta no plano da letra C.</summary>
+        public const float ArHelmetLift = 0.001f;
 
-        /// <summary>Dimensões dos overlays em metros — cabem no círculo das letras A/B/C (~3,5 cm).</summary>
-        public const float ArSignWidth = 0.036f;
+        /// <summary>
+        /// Geometria da arte (20 × 13,3 cm): círculo A/B/C com 2,0 cm de diâmetro; topo do rótulo
+        /// ENERGIA/PROTECAO/SAIDA a 2,03 cm do centro. Overlays ativos (× ArActiveScale, anel × pulso)
+        /// precisam caber nesse orçamento para o rótulo continuar legível.
+        /// </summary>
+        public const float ArLetterDiameter = 0.020f;
+        /// <summary>`v` do centro dos círculos A/B/C no PNG (20×13,3 cm).</summary>
+        public const float ArLetterCenterV = 0.493f;
+        /// <summary>Centro do círculo → topo de ENERGIA/PROTECAO/SAIDA (abaixo da letra).</summary>
+        public const float ArLetterToLabel = 0.0203f;
+
+        /// <summary>Placa 2,6 cm. Ativa × ArActiveScale = 2,81 cm (meia-altura 1,40 cm).</summary>
+        public const float ArSignWidth = 0.026f;
         public const float ArSignLift = 0.002f;
-        public const float ArHelmetWidth = 0.034f;
-        public const float ArRingDiameter = 0.044f;
+        /// <summary>
+        /// Footprint menor que o círculo C (2,0 cm) para a letra e o aro verde permanecerem visíveis.
+        /// Ativo × ArActiveScale ≈ 1,73 cm.
+        /// </summary>
+        public const float ArHelmetWidth = 0.016f;
+        /// <summary>Anel da placa: ~2,7 mm maior que a placa ativa (2,81 cm), sem invadir o rótulo.</summary>
+        public const float ArSignRingDiameter = 0.0285f;
+        /// <summary>Anel do capacete ~2,4 cm (token); no item ativo × ArActiveScale ≈ 2,59 cm.</summary>
+        public const float ArHelmetRingDiameter = 0.024f;
+        public static float RingDiameterFor(bool isEpi) =>
+            isEpi ? ArHelmetRingDiameter : ArSignRingDiameter;
         public const float ArRingLift = 0.001f;
         public const float ArDoneRingScale = 0.85f;
         public const float ArLabelGap = 0.003f;

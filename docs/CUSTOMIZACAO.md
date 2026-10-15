@@ -19,13 +19,17 @@ Cada hazard usa frações do alvo físico (0–1), não metros de HUD na câmera
 | `x`, `y` | Ajuste fino em **metros** no plano da arte (+X direita, +Y sobe a arte) |
 | `z` | Elevação em metros saindo do plano (+Y do `ARTrackedImage`). `0` = token padrão |
 
-No cenário demo:
+No cenário demo (marcador 20 × 13,3 cm; círculos A/B/C medidos no PNG):
 
-| Letra na arte | Hazard | UV típica |
-|---|---|---|
-| **A** (azul / ENERGIA) | HOT | `u≈0.24`, `v≈0.53` |
-| **B** (laranja / PROTECAO) | PINCH | `u≈0.50`, `v≈0.53` |
-| **C** (verde / SAIDA) | EPI (capacete) | `u≈0.76`, `v≈0.53` |
+| Letra na arte | Hazard | UV | Nota |
+|---|---|---|---|
+| **A** (azul / ENERGIA) | HOT | `u=0.238`, `v=0.470` | Centro do círculo em `v=0.493`; placas descem ~0,31 cm (billboard) sem invadir ENERGIA |
+| **B** (laranja / PROTECAO) | PINCH | `u=0.500`, `v=0.470` | Idem |
+| **C** (verde / SAIDA) | EPI (capacete) | `u=0.763`, `v=0.493` | Centro do C (modelo 3D não faz billboard) |
+
+Tokens (`SafetyLensTheme`): placa **2,6 cm** (ativa 2,81 cm); capacete **1,6 cm** (ativa 1,73 cm, menor que o círculo de 2,0 cm); anel da placa **2,85 cm**; anel do capacete **2,4 cm**; lift 2 mm / 1 mm.
+
+Rótulos ENERGIA/PROTECAO/SAIDA ficam **abaixo** dos círculos (topo do texto a **2,03 cm** do centro). Validar projeto soma meia-altura ativa + deslocamento de `v` para baixo.
 
 A conversão para o espaço do `ARTrackedImage` está em `SafetyLensHazard.LocalPositionOnMarker`
 (plano XZ do marcador, +Y saindo da arte). Tamanho físico de referência: **20 × 13,3 cm**.
@@ -40,7 +44,7 @@ Exemplo:
   "instruction": "Toque na placa de alerta: superfície quente / risco de queimadura.",
   "pictogram": "hot",
   "u": 0.238,
-  "v": 0.530,
+  "v": 0.470,
   "x": 0.0,
   "y": 0.0,
   "z": 0.0
@@ -59,10 +63,12 @@ Exemplo:
 
 ## Visuais de RA
 
-- **Placas** (`alert`): geradas em runtime por `SafetyLensPictograms` + `SafetyLensArVisuals` (shader `SafetyLens/SignUnlit`). Não há prefab HOT/PINCH obrigatório.
+- **Placas** (`alert`): geradas em runtime por `SafetyLensPictograms` + `SafetyLensArVisuals` (shader `SafetyLens/SignUnlit`). Não há prefab HOT/PINCH — `Assets/Models/` contém só o EPI.
 - **Capacete** (`epi`): prefab em `Resources/SafetyLens/Prefabs/Helmet`, gerado a partir de `Assets/Models/EPI/HardHat.fbx`.
-  - Troque o FBX e rode **SafetyLens → Regerar prefab do capacete (FBX)**.
-  - O mesh precisa manter collider (ou o setup cria um) e o toque usa `SafetyLensHazardTag` com o mesmo `hazardId`.
+  - `SafetyLensArVisuals.BuildModel` **reescala em runtime** para `ArHelmetWidth` (o prefab velho não fica com tamanho errado).
+  - Trocar o FBX: **SafetyLens → Regerar prefab do capacete (FBX)**. `ConfigureProject` / Validar também regenera (`EnsureHelmetPrefab(true)`).
+  - Collider acompanha o mesh (BoxCollider ~1,6 cm no prefab atual). `SafetyLensHazardTag.hazardId` é aplicado no `Body` em runtime.
+  - Toque RF03: raycast no collider **e** fallback `PickHazard` com raio mínimo `TouchMin` (44 pt) — o capacete a 30–40 cm continua acionável mesmo pequeno.
 
 ## Métricas exportadas
 

@@ -3,6 +3,11 @@
 // Declarado pelo runtime Unity (Classes/UI/UnityViewControllerBase).
 extern UIViewController* UnityGetGLViewController();
 
+extern "C" bool SafetyLens_IsReduceMotionEnabled()
+{
+    return UIAccessibilityIsReduceMotionEnabled();
+}
+
 extern "C" void SafetyLens_ShareFiles(const char* pathsJoined, const char* subject)
 {
     if (pathsJoined == NULL) return;
