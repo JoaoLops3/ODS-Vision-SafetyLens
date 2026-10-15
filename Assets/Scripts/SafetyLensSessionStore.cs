@@ -169,7 +169,7 @@ namespace Facens.SafetyLens
             var sb = new StringBuilder();
             // Colunas novas sempre no fim: CSVs antigos continuam legíveis pelas mesmas posições.
             sb.AppendLine(
-                "participantId,scenarioId,scenarioTitle,elapsedSeconds,errorCount,hazardsConfirmed,hazardsTotal,quizCorrect,quizTotal,quizAnswers,startedAtIso,finishedAtIso,exportedAtIso,inspectionSeconds,quizSeconds");
+                "participantId,scenarioId,scenarioTitle,elapsedSeconds,errorCount,hazardsConfirmed,hazardsTotal,quizCorrect,quizTotal,quizAnswers,startedAtIso,finishedAtIso,exportedAtIso,inspectionSeconds,quizSeconds,fpsAverage,fpsLow1Percent,framesBelow30Ratio,peakMemoryMb");
             foreach (var record in records)
             {
                 if (record == null) continue;
@@ -189,7 +189,11 @@ namespace Facens.SafetyLens
                     .Append(Escape(record.finishedAtIso)).Append(',')
                     .Append(Escape(record.exportedAtIso)).Append(',')
                     .Append(record.inspectionSeconds.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
-                    .Append(record.quizSeconds.ToString("F2", CultureInfo.InvariantCulture))
+                    .Append(record.quizSeconds.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.fpsAverage.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.fpsLow1Percent.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.framesBelow30Ratio.ToString("F4", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.peakMemoryMb.ToString("F2", CultureInfo.InvariantCulture))
                     .AppendLine();
             }
             return sb.ToString();

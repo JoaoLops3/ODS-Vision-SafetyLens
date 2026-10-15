@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Profiling;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
@@ -30,6 +31,11 @@ namespace Facens.SafetyLens
         ARTrackedImage _trackedImage;
         TrackingLossGate _gate;
         bool _targetUnstable;
+
+        // RNF02: FPS/memória medidos só durante a inspeção em RA (a fase que o artigo avalia).
+        readonly SafetyLensPerformanceProbe _perf = new SafetyLensPerformanceProbe();
+        const int MemorySampleEveryFrames = 30;
+        int _perfFrames;
 
         [Header("Tracking Limited (P1-6)")]
         [SerializeField] float limitedGraceSeconds = 1.5f;
@@ -118,6 +124,9 @@ namespace Facens.SafetyLens
 
         void Awake()
         {
+            // RNF02: sem isso o iOS trava em 30 FPS e a média fica colada no mínimo do artigo,
+            // impossibilitando provar "≥ 30". Custo assumido: mais bateria/aquecimento.
+            Application.targetFrameRate = 60;
             _imageManager = GetComponent<ARTrackedImageManager>();
             _arSession = FindFirstObjectByType<ARSession>(FindObjectsInactive.Include);
             if (_arSession == null)
@@ -279,6 +288,8 @@ namespace Facens.SafetyLens
             _startedAt = -1f;
             _finishedAt = -1f;
             _inspectionEndedAt = -1f;
+            _perf.Reset();
+            _perfFrames = 0;
             ExportSummary = string.Empty;
             ExportFailed = false;
             Phase = AppPhase.Scanning;
@@ -460,6 +471,14 @@ namespace Facens.SafetyLens
 
         void Update()
         {
+            if (Phase == AppPhase.RiskInspection)
+            {
+                _perf.AddFrame(Time.unscaledDeltaTime);
+                // Profiler.GetTotalAllocatedMemoryLong tem custo; 1 leitura a cada 30 frames basta para o pico.
+                if (++_perfFrames % MemorySampleEveryFrames == 0)
+                    _perf.RecordMemoryBytes(Profiler.GetTotalAllocatedMemoryLong());
+            }
+
             UpdateTargetVisibility();
             if ((Phase == AppPhase.Scanning || Phase == AppPhase.RiskInspection) && IsCameraActive
                 && (ARSession.state == ARSessionState.Unsupported
@@ -557,6 +576,8 @@ namespace Facens.SafetyLens
             {
                 // RF04: aqui fecha o tempo de inspeção; o que vier depois é tempo de quiz.
                 _inspectionEndedAt = Time.realtimeSinceStartup;
+                // Última leitura de memória: inspeções curtas (< 30 frames) não ficariam sem amostra.
+                _perf.RecordMemoryBytes(Profiler.GetTotalAllocatedMemoryLong());
                 _gate.Reset();
                 _targetUnstable = false;
                 Phase = AppPhase.Quiz;
@@ -622,6 +643,7 @@ namespace Facens.SafetyLens
                 ElapsedSeconds,
                 InspectionSeconds,
                 QuizSeconds,
+                _perf.Summarize(),
                 _startedUtc.ToString("o"),
                 _finishedUtc.ToString("o"));
 
@@ -752,6 +774,8 @@ namespace Facens.SafetyLens
             _startedAt = -1f;
             _finishedAt = -1f;
             _inspectionEndedAt = -1f;
+            _perf.Reset();
+            _perfFrames = 0;
             ExportSummary = string.Empty;
             ExportFailed = false;
             ShareStatus = string.Empty;

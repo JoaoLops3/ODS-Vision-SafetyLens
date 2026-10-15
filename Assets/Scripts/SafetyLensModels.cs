@@ -106,6 +106,14 @@ namespace Facens.SafetyLens
         public float inspectionSeconds;
         /// <summary>RF04: da primeira pergunta à última resposta do quiz.</summary>
         public float quizSeconds;
+        /// <summary>RNF02: FPS médio durante a inspeção em RA.</summary>
+        public float fpsAverage;
+        /// <summary>RNF02: percentil 1 de FPS (pior 1% dos frames) durante a inspeção.</summary>
+        public float fpsLow1Percent;
+        /// <summary>RNF02: fração dos frames abaixo de 30 FPS (0 a 1).</summary>
+        public float framesBelow30Ratio;
+        /// <summary>RNF02: pico de memória alocada (MB) observado na inspeção.</summary>
+        public float peakMemoryMb;
         public int errorCount;
         public int hazardsConfirmed;
         public int hazardsTotal;

@@ -75,12 +75,21 @@ namespace Facens.SafetyLens.Tests
         public void BuildRecord_KeepsInspectionAndQuizSeconds()
         {
             var p = new SafetyLensInspectionProgress(1);
+            var perf = new SafetyLensPerformanceSummary
+            {
+                FrameCount = 1800,
+                FpsAverage = 58.5f,
+                FpsLow1Percent = 41f,
+                FramesBelow30Ratio = 0.01f,
+                PeakMemoryMb = 512.5f
+            };
             var record = p.BuildRecord(
                 "P01",
                 ValidScenario(),
                 elapsedSeconds: 45.5f,
                 inspectionSeconds: 30.25f,
                 quizSeconds: 15.25f,
+                performance: perf,
                 startedAtIso: "2026-01-01T00:00:00Z",
                 finishedAtIso: "2026-01-01T00:00:45Z");
 
@@ -88,6 +97,10 @@ namespace Facens.SafetyLens.Tests
             Assert.AreEqual(30.25f, record.inspectionSeconds, 1e-5f);
             Assert.AreEqual(15.25f, record.quizSeconds, 1e-5f);
             Assert.AreEqual(record.elapsedSeconds, record.inspectionSeconds + record.quizSeconds, 1e-4f);
+            Assert.AreEqual(58.5f, record.fpsAverage, 1e-5f);
+            Assert.AreEqual(41f, record.fpsLow1Percent, 1e-5f);
+            Assert.AreEqual(0.01f, record.framesBelow30Ratio, 1e-5f);
+            Assert.AreEqual(512.5f, record.peakMemoryMb, 1e-5f);
         }
 
         [Test]

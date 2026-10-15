@@ -103,6 +103,7 @@ namespace Facens.SafetyLens
             float elapsedSeconds,
             float inspectionSeconds,
             float quizSeconds,
+            SafetyLensPerformanceSummary performance,
             string startedAtIso,
             string finishedAtIso)
         {
@@ -114,6 +115,10 @@ namespace Facens.SafetyLens
                 elapsedSeconds = elapsedSeconds,
                 inspectionSeconds = inspectionSeconds,
                 quizSeconds = quizSeconds,
+                fpsAverage = performance.FpsAverage,
+                fpsLow1Percent = performance.FpsLow1Percent,
+                framesBelow30Ratio = performance.FramesBelow30Ratio,
+                peakMemoryMb = performance.PeakMemoryMb,
                 errorCount = ErrorCount,
                 hazardsConfirmed = HazardConfirmedCount,
                 hazardsTotal = _hazardDone.Length,
