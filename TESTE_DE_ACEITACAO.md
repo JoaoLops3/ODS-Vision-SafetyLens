@@ -50,7 +50,7 @@ Unity -batchmode -nographics -projectPath . -runTests -testPlatform EditMode \
   -testResults Library/editmode-results.xml
 ```
 
-Cobertura: `TrackingLossGate`, `LocalPositionOnMarker` (UV→metros), `SanitizeParticipantId` / `SanitizeFilePart`, `BuildCsv` (InvariantCulture + escape).
+Cobertura: `TrackingLossGate`, `LocalPositionOnMarker` (UV→metros, inclusive UV externo de alvo alternativo), `SanitizeParticipantId` / `SanitizeFilePart`, `BuildCsv` (InvariantCulture + escape + colunas novas), `SafetyLensPerformanceProbe` (FPS/memória), `ResolveUv` / `IsKnownTarget` (QR) e validador de `altTargets`.
 
 ## Roteiro executável (&lt; 20 min) — P1-9
 
@@ -67,6 +67,18 @@ Cobertura: `TrackingLossGate`, `LocalPositionOnMarker` (UV→metros), `SanitizeP
 | 9 | Fim / Histórico | Abrir histórico; compartilhar CSV | Lista a sessão; Share Sheet iOS abre | 2 | [ ] |
 | 10 | (Opcional) | Device sem ARKit / `ARSessionState.Unsupported` | Banner vermelho: não suporta RA (não confundir com marcador perdido) | 1 | [ ] |
 | 11 | Artigo | Repetir 4 no **alvo impresso 20 cm** | Pendência explícita — ainda não feito | — | [ ] |
+| 12 | Marcador QR | Fluxo feliz completo apontando para o **QR (12 cm)** | Overlays em linha (0.2/0.5/0.8); `markerName=SafetyLensQrTarget` no JSON/CSV | 3 | [ ] |
+| 13 | Dois marcadores | WL03 e QR visíveis ao mesmo tempo; reconhecer um, depois mostrar o outro | Sessão fica no **primeiro** marcador; o segundo não rouba o conteúdo | 2 | [ ] |
+| 14 | Zonas vermelhas | Inspeção no WL03 | Disco vermelho translúcido sob cada placa, **sem cobrir** ENERGIA/PROTECAO; ativo mais opaco e pulsando; concluído esmaecido | 1 | [ ] |
+| 15 | Reduce motion | Ativar "Reduzir movimento" no iOS e repetir 14 | Zona ativa **sem pulso** (opacidade constante); anel sem pulso | 1 | [ ] |
+| 16 | RNF02 no CSV | Concluir sessão; abrir CSV | `fpsAverage ≥ 30`, `fpsLow1Percent` e `peakMemoryMb` preenchidos; `framesBelow30Ratio` baixo | 1 | [ ] |
+| 17 | RF04 no CSV | Conferir a mesma sessão | `inspectionSeconds + quizSeconds ≈ elapsedSeconds` | 1 | [ ] |
+| 18 | Artigo / Android | Fluxo completo **em aparelho Android com ARCore** (Build and Run) | Paridade com iOS — pendência explícita, depende de aparelho da equipe | — | [ ] |
+
+> **Pendências que não se resolvem por código:** itens 11 (alvo impresso de 20 cm) e 18 (Android
+> ponta a ponta) dependem de papel impresso e aparelho físico com a equipe. A nota do marcador QR
+> no `arcoreimg eval-img` (meta ≥ 75) também está pendente — a ferramenta não estava disponível
+> na máquina de desenvolvimento.
 
 **Registro por execução**
 
@@ -126,4 +138,6 @@ Cronômetro e fase **não** pausam nem resetam em nenhum caso.
 ## Desempenho / tracking (dispositivo)
 
 - Manter tracking estável com iluminação moderada.
-- Observar fluidez (~30 FPS mínimo do artigo).
+- Observar fluidez (~30 FPS mínimo do artigo). A medição agora é automática: o CSV de cada
+  sessão traz `fpsAverage`, `fpsLow1Percent`, `framesBelow30Ratio` e `peakMemoryMb` (RNF02),
+  amostrados só durante a fase de inspeção em RA.

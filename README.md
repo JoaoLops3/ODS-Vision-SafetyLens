@@ -118,16 +118,17 @@ Materiais complementares (persona, jornada): pasta [`docs/documents/`](docs/docu
 
 | ID   | Funcionalidade                    | Descrição                                                                           | Status |
 | ---- | --------------------------------- | ----------------------------------------------------------------------------------- | ------ |
-| RF01 | Rastreamento de imagem            | Identifica o Image Target (`SafetyLensEquipmentTarget`) via `ARTrackedImageManager` | ✅     |
-| RF02 | Exibição de conteúdo em RA        | Placas HOT/PINCH e capacete EPI filhos do marcador (UV A/B/C)                       | ✅     |
-| RF03 | Interação por toque               | Toque no overlay do item ativo + confirmação; toque errado conta erro; quiz         | ✅     |
-| RF04 | Cronometragem                     | Tempo do reconhecimento do marcador ao fim do quiz                                  | ✅     |
-| RF05 | Registro de erros                 | Contabiliza seleções e respostas incorretas                                         | ✅     |
-| RF06 | Exportação local                  | JSON + CSV em `persistentDataPath`; histórico e share iOS                           | ✅     |
-| RF07 | Câmera sob demanda                | `ARSession` só ativa após “Abrir câmera”                                            | ✅     |
-| RF08 | Histórico de sessões              | Lista e reexporta sessões salvas no aparelho                                        | ✅     |
-| RF09 | Share Android nativo              | Intent de compartilhamento                                                          | ⬜     |
-| RF10 | Experimento SUS / retenção 7 dias | Módulo completo do protocolo do artigo                                              | 🚧     |
+| RF01 | Rastreamento de imagem            | Identifica os Image Targets (`SafetyLensEquipmentTarget` e `SafetyLensQrTarget`) via `ARTrackedImageManager` | ✅     |
+| RF02 | Exibição de conteúdo em RA        | Zonas vermelhas de alerta + placas HOT/PINCH e capacete EPI filhos do marcador (UV A/B/C)                    | ✅     |
+| RF03 | Interação por toque               | Toque no overlay do item ativo + confirmação; toque errado conta erro; quiz                                  | ✅     |
+| RF04 | Cronometragem                     | Tempo de inspeção (marcador → último risco) e tempo de quiz medidos em separado, mais o total                | ✅     |
+| RF05 | Registro de erros                 | Contabiliza seleções e respostas incorretas                                                                  | ✅     |
+| RF06 | Exportação local                  | JSON + CSV em `persistentDataPath` (inclui tempos, FPS/memória e marcador usado); histórico e share iOS      | ✅     |
+| RF07 | Câmera sob demanda                | `ARSession` só ativa após “Abrir câmera”                                                                     | ✅     |
+| RF08 | Histórico de sessões              | Lista e reexporta sessões salvas no aparelho                                                                 | ✅     |
+| RF09 | Share Android nativo              | Intent de compartilhamento                                                                                   | ⬜     |
+| RF10 | Experimento SUS / retenção 7 dias | Módulo completo do protocolo do artigo                                                                       | 🚧     |
+| RF11 | Marcador QR alternativo           | QR Code rastreado como Image Target (12 cm), com layout próprio de âncoras (`altTargets`)                    | ✅     |
 
 **Legenda:** ✅ Implementado · 🚧 Em desenvolvimento · ⬜ Planejado · ❌ Cancelado
 
@@ -138,12 +139,16 @@ Materiais complementares (persona, jornada): pasta [`docs/documents/`](docs/docu
 | ID    | Categoria       | Requisito                                                                          |
 | ----- | --------------- | ---------------------------------------------------------------------------------- |
 | RNF01 | Compatibilidade | Smartphones convencionais Android 8+ (ARCore) / iOS (ARKit), sem LiDAR obrigatório |
-| RNF02 | Desempenho      | Meta ≥ 30 FPS durante a experiência RA                                             |
+| RNF02 | Desempenho      | Meta ≥ 30 FPS — **medido automaticamente**: FPS médio, percentil 1, fração < 30 FPS e pico de memória saem no CSV de cada sessão |
 | RNF03 | Estabilidade    | Manter ancoramento sob variações moderadas de iluminação                           |
 | RNF04 | Usabilidade     | Fluxo compreensível com instrução breve                                            |
 | RNF05 | Offline         | RA e gravação de dados sem internet                                                |
 | RNF06 | Privacidade     | Sem conta/nuvem; ID higienizado; descrição de uso da câmera no iOS                 |
 | RNF07 | Documentação    | Repositório permite configurar e executar o projeto                                |
+
+> **Decisão (RNF02):** o app define `Application.targetFrameRate = 60`. Sem isso o iOS trava a
+> renderização em 30 FPS e a média ficaria colada no mínimo do artigo, impossibilitando provar
+> "≥ 30 FPS". Custo assumido: mais bateria e aquecimento durante a sessão.
 
 ---
 
@@ -202,6 +207,17 @@ Detalhes adicionais: `[docs/ARQUITETURA.md](docs/ARQUITETURA.md)`.
 
 **Image Tracking** (marcador / Image Target), via **AR Foundation** sobre **ARKit** (iOS) ou **ARCore** (Android).
 
+Há **dois marcadores** na Reference Image Library:
+
+| Marcador | Nome na library | Tamanho físico | Âncoras |
+|---|---|---|---|
+| Placa WL03 (principal) | `SafetyLensEquipmentTarget` | 20 × 13,3 cm | Letras A/B/C (UV do hazard) |
+| QR Code (alternativo) | `SafetyLensQrTarget` | 12 × 12 cm | Layout `altTargets` do cenário |
+
+O QR **não é decodificado**: ele é rastreado como imagem, igual à placa. A sessão fica presa ao
+**primeiro** marcador reconhecido (o outro é ignorado até reiniciar) e o marcador usado é gravado
+no JSON/CSV (`markerName`). Arte do QR reproduzível via `Tools/generate-qr-marker.py`.
+
 Não utilizamos Plane Detection como fluxo principal, nem óculos dedicados.
 
 ### 11.2 Fluxo técnico
@@ -218,6 +234,7 @@ Não utilizamos Plane Detection como fluxo principal, nem óculos dedicados.
 
 ### 11.3 Elementos virtuais
 
+- zonas vermelhas de alerta deitadas no plano do marcador, sob as placas (interface do artigo; opacidade por estado, pulso respeita reduce motion);
 - placas de advertência (HOT / PINCH) geradas por pictograma;
 - capacete 3D (EPI);
 - anel de destaque no item ativo;
@@ -283,6 +300,7 @@ SafetyLens/
 | `SafetyLensPictograms.cs`              | Rasterização das placas ISO em background                         |
 | `SafetyLensBillboard.cs`               | Orientação legível dos rótulos                                    |
 | `SafetyLensSessionStore.cs`            | Persistência JSON/CSV e histórico                                 |
+| `SafetyLensPerformanceProbe.cs`        | FPS/memória da inspeção (RNF02), classe pura testável             |
 | `SafetyLensNativeShare.cs` + `.mm`     | Compartilhamento iOS                                              |
 | `SafetyLensTheme.cs`                   | Design tokens                                                     |
 | `SafetyLensModels.cs`                  | Modelos de dados e conversão UV → metros                          |
@@ -517,7 +535,8 @@ Roteiro ampliado: `[TESTE_DE_ACEITACAO.md](TESTE_DE_ACEITACAO.md)`.
 
 ## 24. Limitações Conhecidas
 
-- Dependência de **marcador** visível e bem iluminado (~20 cm).
+- Dependência de **marcador** visível e bem iluminado (WL03 ~20 cm ou QR ~12 cm).
+- Nota de rastreamento do marcador QR no `arcoreimg eval-img` (meta ≥ 75) ainda não conferida — ferramenta indisponível na máquina de desenvolvimento.
 - Em `TrackingState.Limited` o conteúdo pode sumir de forma abrupta (melhoria planejada).
 - Calibração fina de UV/escala ainda pode ser refinada (capacete vs letra C).
 - Share nativo completo apenas no **iOS** (Android planejado).

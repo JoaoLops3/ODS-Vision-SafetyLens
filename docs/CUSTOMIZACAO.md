@@ -5,8 +5,9 @@
 Edite `Assets/Resources/safetylens_scenario.json`:
 
 - `targetName` deve coincidir com o nome na Reference Image Library (`SafetyLensEquipmentTarget`).
-- `hazards[]`: zonas `alert` (placa) e `epi` (modelo 3D), ancoradas por **UV no marcador**.
+- `hazards[]`: zonas `alert` (placa + zona vermelha) e `epi` (modelo 3D), ancoradas por **UV no marcador**.
 - `quiz[]`: pergunta, opções e `correctIndex` (base 0).
+- `altTargets[]`: Image Targets alternativos (ex.: QR Code) com UVs próprios por hazard.
 
 ### Âncoras UV (A / B / C)
 
@@ -55,15 +56,39 @@ Exemplo:
 - `pictogram` (alert): `hot`, `pinch` ou `generic`.
 - `model` (epi): `helmet`.
 
-## Marcador físico
+### Alvos alternativos (`altTargets`)
 
-1. Imprima `Assets/Markers/safetylens-equipment-target.png` com **~20 cm de largura** (mesmo valor da library).
-2. Para trocar a imagem: substitua o PNG e use **SafetyLens → Configurar projeto completo**.
-3. O nome do target na library e no JSON deve permanecer `SafetyLensEquipmentTarget`.
+Cada layout alternativo precisa de `name` (igual ao da Reference Image Library) e **um placement
+por hazard** — a validação do cenário rejeita hazard sem placement, `hazardId` inexistente,
+UV fora de `[0,1]` e nome duplicado ou igual ao `targetName` principal.
+
+```json
+"altTargets": [
+  {
+    "name": "SafetyLensQrTarget",
+    "placements": [
+      { "hazardId": "HOT", "u": 0.2, "v": 0.5 },
+      { "hazardId": "PINCH", "u": 0.5, "v": 0.5 },
+      { "hazardId": "EPI", "u": 0.8, "v": 0.5 }
+    ]
+  }
+]
+```
+
+A sessão fica presa ao **primeiro** marcador reconhecido (WL03 ou QR); o outro é ignorado até
+reiniciar. O marcador usado sai no JSON/CSV (`markerName`).
+
+## Marcadores físicos
+
+1. **Principal (WL03):** imprima `Assets/Markers/safetylens-equipment-target.png` com **~20 cm de largura** (mesmo valor da library).
+2. **Alternativo (QR):** imprima `Assets/Markers/safetylens-qr-target.png` com **~12 cm de largura**. O QR **não é decodificado** — é rastreado como imagem. Para regerar a arte: `python3 Tools/generate-qr-marker.py` (requer `qrcode` + `pillow`).
+3. Para trocar uma imagem: substitua o PNG e use **SafetyLens → Configurar projeto completo**.
+4. Os nomes na library e no JSON devem permanecer `SafetyLensEquipmentTarget` e `SafetyLensQrTarget`.
 
 ## Visuais de RA
 
 - **Placas** (`alert`): geradas em runtime por `SafetyLensPictograms` + `SafetyLensArVisuals` (shader `SafetyLens/SignUnlit`). Não há prefab HOT/PINCH — `Assets/Models/` contém só o EPI.
+- **Zonas vermelhas** (`alert`): disco translúcido **deitado no plano do marcador**, sob a placa (interface do artigo). Diâmetro = círculo da letra (`ArZoneDiameter`, 2,0 cm) para não cobrir os rótulos; o estado muda só a opacidade (`ArZoneActiveAlpha` / `Idle` / `Done`) e o item ativo pulsa a opacidade — pulso desligado com *reduce motion*.
 - **Capacete** (`epi`): prefab em `Resources/SafetyLens/Prefabs/Helmet`, gerado a partir de `Assets/Models/EPI/HardHat.fbx`.
   - `SafetyLensArVisuals.BuildModel` **reescala em runtime** para `ArHelmetWidth` (o prefab velho não fica com tamanho errado).
   - Trocar o FBX: **SafetyLens → Regerar prefab do capacete (FBX)**. `ConfigureProject` / Validar também regenera (`EnsureHelmetPrefab(true)`).
@@ -77,4 +102,7 @@ Arquivos em `Application.persistentDataPath`:
 - `safetylens_<id>_<timestamp>.json`
 - `safetylens_<id>_<timestamp>.csv`
 
-Campos: participantId, tempo, erros, hazards, respostas do quiz.
+Campos: participantId, tempo total, **tempo de inspeção e de quiz separados (RF04)**, erros,
+hazards, respostas do quiz, **FPS médio / percentil 1 / fração abaixo de 30 FPS / pico de
+memória (RNF02)** e o **marcador usado** (`markerName`). Colunas novas sempre entram no fim
+do CSV — arquivos antigos continuam legíveis pelas mesmas posições.
