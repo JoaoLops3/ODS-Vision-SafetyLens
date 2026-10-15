@@ -106,3 +106,14 @@ Campos: participantId, tempo total, **tempo de inspeção e de quiz separados (R
 hazards, respostas do quiz, **FPS médio / percentil 1 / fração abaixo de 30 FPS / pico de
 memória (RNF02)** e o **marcador usado** (`markerName`). Colunas novas sempre entram no fim
 do CSV — arquivos antigos continuam legíveis pelas mesmas posições.
+
+## Texto sugerido para o artigo
+
+Trechos para alinhar o PDF ao protótipo (copiar para o Word do SharePoint):
+
+- **RF04:** "O sistema deverá registrar, em segundos, o tempo de inspeção (do reconhecimento do marcador à confirmação do último risco) e o tempo de quiz, além do tempo total da sessão."
+- **Interface, item 3:** "Projeção de zonas vermelhas de alerta no plano do equipamento, combinadas com placas de advertência no padrão ISO 7010 e modelos 3D de EPIs."
+- **Metodologia:** "O rastreamento usa marcadores visuais 2D (Image Targets): uma placa ilustrada do equipamento e, alternativamente, um QR Code tratado como Image Target."
+- **RNF02 / testes de desempenho:** "A taxa de quadros (média e percentil 1%) e o pico de memória são registrados automaticamente em cada sessão."
+- **Próximos passos:** "Protótipo funcional validado em iOS; pendentes a validação em Android e o teste com alvo impresso de 20 cm."
+- **Inconsistência a resolver pela equipe:** o resumo e a RQ1 falam em "controle digital interativo", e a metodologia fala em "leitura passiva de manuais 2D". Escolher uma das duas condições e usar o mesmo termo nas três seções.

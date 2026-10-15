@@ -38,6 +38,8 @@ namespace Facens.SafetyLens
         public static readonly Color HazardAlertActive = Hex(0xE5372A);
         /// <summary>Zona vermelha de alerta (artigo): disco translúcido no plano do marcador. Alpha vem dos tokens ArZone*.</summary>
         public static readonly Color HazardZone = Hex(0xE5372A);
+        /// <summary>Zona concluída: mesmo vermelho, o alpha vem de ArZoneDoneAlpha.</summary>
+        public static readonly Color HazardZoneDone = Hex(0xE5372A);
         public static readonly Color HazardEpiActive = Hex(0x2B7BF0);
         public static readonly Color HazardDone = Hex(0x1E9E6E);
         public static readonly Color HazardIdle = Hex(0x56606C);

@@ -210,6 +210,27 @@ namespace Facens.SafetyLens.Tests
         }
 
         [Test]
+        public void BuildRecord_QuizWithoutAnswers_QuizSecondsZero()
+        {
+            var p = new SafetyLensInspectionProgress(1);
+            var record = p.BuildRecord(
+                "P02",
+                ValidScenario(),
+                elapsedSeconds: 12f,
+                inspectionSeconds: 12f,
+                quizSeconds: 0f,
+                performance: default,
+                markerName: "SafetyLensEquipmentTarget",
+                startedAtIso: "2026-01-01T00:00:00Z",
+                finishedAtIso: "2026-01-01T00:00:12Z");
+
+            Assert.AreEqual(0f, record.quizSeconds, 1e-5f);
+            Assert.AreEqual(0, record.quizCorrect);
+            Assert.AreEqual(0f, record.fpsAverage);
+            Assert.AreEqual("SafetyLensEquipmentTarget", record.markerName);
+        }
+
+        [Test]
         public void ActiveRingPulseScale_ReducedMotionIsOne()
         {
 #if SAFETYLENS_REDUCE_MOTION

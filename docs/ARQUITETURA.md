@@ -28,9 +28,9 @@ SafetyLens Status Overlay
 
 1. **Identificação** — ID do participante (RF06 / tela 1).
 2. **Scanning** — câmera busca o Image Target (RF01 / tela 2).
-3. **RiskInspection** — zonas de alerta + EPIs em RA; toque confirma (RF02, RF03 / tela 3).
-4. **Quiz** — perguntas de fixação; erros contabilizados (RF03, RF05 / tela 4).
-5. **Finished** — tempo total + exportação JSON/CSV local (RF04, RF06).
+3. **RiskInspection** — zonas vermelhas + placas ISO + EPIs em RA; toque confirma (RF02, RF03 / tela 3). Cronômetro de inspeção e sonda de FPS/memória (RF04 / RNF02).
+4. **Quiz** — perguntas de fixação; erros contabilizados (RF03, RF05 / tela 4). Tempo de quiz separado do de inspeção.
+5. **Finished** — tempo total + inspeção + quiz + FPS/memória + marcador usado; exportação JSON/CSV local (RF04, RF06).
 
 ## Origem do código
 
@@ -47,9 +47,11 @@ SafetyLens Status Overlay
 
 `Assets/Resources/safetylens_scenario.json` — hazards, EPIs e quiz separados da lógica C#.
 
-Posição dos hazards: **UV no marcador** (`u`/`v` 0–1 → letras A/B/C), convertida em
-`SafetyLensHazard.LocalPositionOnMarker` para o espaço local do `ARTrackedImage`.
-Ajuste fino opcional em metros (`x`/`y` no plano, `z` = lift). Ver `docs/CUSTOMIZACAO.md`.
+Posição dos hazards: **UV no marcador** (`u`/`v` 0–1 → letras A/B/C no WL03), convertida em
+`SafetyLensHazard.LocalPositionOnMarker`. Alvos alternativos (QR) usam `altTargets` +
+`ResolveUv`. Ajuste fino opcional em metros (`x`/`y` no plano, `z` = lift). Ver `docs/CUSTOMIZACAO.md`.
+
+A sessão trava no **primeiro** Image Target reconhecido (`markerName` no export).
 
 ### Tracking Limited (P1-6)
 
@@ -68,8 +70,8 @@ Fase e cronômetro (`_startedAt`) **não** pausam nem resetam. Durante Scanning 
 **SafetyLens → Validar projeto** exige:
 
 - Cena (ARSession, XROrigin, TrackedImageManager, overlays, câmera única)
-- Reference Image Library com nome `SafetyLensEquipmentTarget`
-- Cenário com `targetName` igual + UVs em `[0,1]`
-- Overlay: meia-altura ativa + deslocamento de `v` rumo aos rótulos ≤ 2,03 cm; capacete ativo < círculo C (2,0 cm)
+- Reference Image Library com **2** imagens: `SafetyLensEquipmentTarget` (WL03, 20 cm) e `SafetyLensQrTarget` (QR, 12 cm)
+- Cenário com `targetName` igual ao principal + UVs em `[0,1]`; `altTargets` com um placement por hazard
+- Overlay: meia-altura ativa + deslocamento de `v` rumo aos rótulos ≤ 2,03 cm; capacete ativo < círculo C (2,0 cm); zona vermelha ≤ círculo da letra
 - **Android:** ARCore Loader
 - **iOS:** ARKit Loader + Metal only + `cameraUsageDescription`

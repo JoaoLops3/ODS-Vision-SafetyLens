@@ -70,14 +70,17 @@ namespace Facens.SafetyLens
             summary.FramesBelow30Ratio = _framesBelow30 / (float)_frameCount;
             summary.PeakMemoryMb = _peakMemoryBytes / (1024f * 1024f);
 
-            // Percentil 99 de duração de frame = percentil 1 de FPS.
-            var target = (long)Math.Ceiling(_frameCount * 0.99);
+            // 1% low = FPS do pior 1% dos frames (duração no limiar desse grupo).
+            // Com 100 frames e 1 spike, Ceiling(0.99*n) parava nos 99 bons; precisamos
+            // ultrapassar n - ceil(0.01*n) para cair no bucket do spike.
+            var worstCount = Math.Max(1, (int)Math.Ceiling(_frameCount * 0.01));
+            var target = _frameCount - worstCount;
             long cumulative = 0;
             var p99Ms = MaxMs;
             for (var ms = 0; ms <= MaxMs; ms++)
             {
                 cumulative += _buckets[ms];
-                if (cumulative >= target)
+                if (cumulative > target)
                 {
                     p99Ms = ms;
                     break;

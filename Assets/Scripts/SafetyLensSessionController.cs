@@ -839,7 +839,7 @@ namespace Facens.SafetyLens
                 if (visual.ZoneMaterial != null)
                 {
                     // Zona não muda de tamanho (orçamento da letra); o estado entra só na opacidade.
-                    var zoneColor = SafetyLensTheme.HazardZone;
+                    var zoneColor = done ? SafetyLensTheme.HazardZoneDone : SafetyLensTheme.HazardZone;
                     zoneColor.a = done
                         ? SafetyLensTheme.ArZoneDoneAlpha
                         : active ? SafetyLensTheme.ArZoneActiveAlpha : SafetyLensTheme.ArZoneIdleAlpha;

@@ -62,9 +62,9 @@ Planilha completa (fonte da tabela abaixo):
 
 O **SafetyLens** é um protótipo móvel de Realidade Aumentada para **treinamento de segurança** e **identificação de riscos industriais**. O problema tratado é a alta carga cognitiva dos treinamentos tradicionais baseados em manuais 2D: o trabalhador alterna atenção entre o papel e a máquina real, o que favorece erros de percepção e habilidade.
 
-O público são operadores industriais, técnicos de segurança e estudantes em formação. A solução usa o **smartphone** (sem óculos de alto custo): o participante aponta a câmera para um **marcador** (Image Target) afixado no equipamento; o app sobrepõe placas de alerta e EPIs no contexto espacial, guia a inspeção na ordem correta, aplica um quiz e exporta métricas (tempo, erros, respostas) em JSON/CSV **offline**.
+O público são operadores industriais, técnicos de segurança e estudantes em formação. A solução usa o **smartphone** (sem óculos de alto custo): o participante aponta a câmera para um **marcador** (Image Target) afixado no equipamento — placa WL03 (~20 cm) ou QR alternativo (~12 cm); o app sobrepõe zonas vermelhas, placas de alerta e EPIs no contexto espacial, guia a inspeção na ordem correta, aplica um quiz e exporta métricas (tempo de inspeção/quiz, erros, FPS, respostas) em JSON/CSV **offline**.
 
-A RA participa como **camada de ancoramento espacial**: um único `ARTrackedImage` rastreia a placa física (~20 cm); HOT, PINCH e EPI são filhos locais nas letras **A / B / C** da arte (âncoras UV), alinhados à pose do ARKit/ARCore via AR Foundation.
+A RA participa como **camada de ancoramento espacial**: a sessão trava no primeiro `ARTrackedImage` reconhecido; HOT, PINCH e EPI são filhos locais (letras **A / B / C** no WL03, ou layout `altTargets` no QR), alinhados à pose do ARKit/ARCore via AR Foundation.
 
 ---
 
@@ -90,12 +90,12 @@ Desenvolver e validar um protótipo móvel de Realidade Aumentada (**SafetyLens*
 
 ### 4.2 Objetivos Técnicos
 
-- Implementar reconhecimento de imagens (Image Tracking) com AR Foundation.
-- Sobrepor placas de alerta e modelo 3D de EPI ancorados ao marcador (letras A/B/C).
+- Implementar reconhecimento de imagens (Image Tracking) com AR Foundation (WL03 + QR).
+- Sobrepor zonas vermelhas, placas de alerta e modelo 3D de EPI ancorados ao marcador.
 - Permitir interação por toque nos overlays (RF03) e quiz de fixação.
-- Cronometrar a sessão e registrar erros (RF04 / RF05).
-- Exportar dados locais em JSON/CSV (RF06) sem rede (RNF05).
-- Executar e testar em dispositivo móvel (iOS com ARKit; Android com ARCore previsto).
+- Cronometrar inspeção e quiz em separado e registrar erros (RF04 / RF05).
+- Medir FPS/memória na inspeção (RNF02) e exportar JSON/CSV local (RF06) sem rede (RNF05).
+- Executar e testar em dispositivo móvel (iOS com ARKit validado; Android com ARCore configurado).
 - Documentar instalação, execução, testes e limitações no GitHub.
 
 ---
@@ -126,7 +126,7 @@ Materiais complementares (persona, jornada): pasta [`docs/documents/`](docs/docu
 | RF06 | Exportação local                  | JSON + CSV em `persistentDataPath` (inclui tempos, FPS/memória e marcador usado); histórico e share iOS      | ✅     |
 | RF07 | Câmera sob demanda                | `ARSession` só ativa após “Abrir câmera”                                                                     | ✅     |
 | RF08 | Histórico de sessões              | Lista e reexporta sessões salvas no aparelho                                                                 | ✅     |
-| RF09 | Share Android nativo              | Intent de compartilhamento                                                                                   | ⬜     |
+| RF09 | Share Android nativo              | Intent + FileProvider (`SafetyLensNativeShare`)                                                              | ✅     |
 | RF10 | Experimento SUS / retenção 7 dias | Módulo completo do protocolo do artigo                                                                       | 🚧     |
 | RF11 | Marcador QR alternativo           | QR Code rastreado como Image Target (12 cm), com layout próprio de âncoras (`altTargets`)                    | ✅     |
 
@@ -174,7 +174,8 @@ Materiais complementares (persona, jornada): pasta [`docs/documents/`](docs/docu
 | ----------- | ----------------------- | ------------------------ | ----------------------------------- |
 | Computador  | **MacBook (chip M2)**   | macOS; Unity + Xcode     | Desenvolvimento e build iOS         |
 | Smartphone  | **iPhone 12**           | iOS + ARKit              | Execução e testes de Image Tracking |
-| Alvo físico | Impressão / tela ~20 cm | Marcador WL03            | Image Target de calibração          |
+| Alvo físico | Impressão / tela ~20 cm | Marcador WL03            | Image Target principal              |
+| Alvo físico | Impressão / tela ~12 cm | Marcador QR              | Image Target alternativo            |
 
 > Não declaramos compatibilidade com dispositivos não testados pela equipe.
 
@@ -225,9 +226,9 @@ Não utilizamos Plane Detection como fluxo principal, nem óculos dedicados.
 ![Fluxo de RA](docs/diagrams/fluxo-ra.svg)
 
 1. Usuário informa ID e toca em **Abrir câmera** (`ARSession` ativa).
-2. `ARTrackedImageManager` analisa o feed em busca de `SafetyLensEquipmentTarget`.
-3. Com `TrackingState.Tracking`, obtém-se a pose do marcador e inicia o cronômetro (RF04).
-4. Conteúdo é parentalizado no `ARTrackedImage`; posições vêm de **UV** (`u`/`v`) nas letras A/B/C.
+2. `ARTrackedImageManager` analisa o feed em busca de `SafetyLensEquipmentTarget` **ou** `SafetyLensQrTarget`.
+3. Com `TrackingState.Tracking`, obtém-se a pose do marcador, trava a sessão nesse alvo e inicia o cronômetro de inspeção (RF04).
+4. Conteúdo é parentalizado no `ARTrackedImage`; posições vêm de **UV** (`u`/`v`) — letras A/B/C no WL03, layout `altTargets` no QR.
 5. Placas billboardam para a câmera; o capacete assenta no plano do marcador.
 6. Toque no item ativo **seleciona** (RF03); o botão **Confirmar item** só então conclui o passo.
 7. Após HOT → PINCH → EPI, segue quiz e exportação local (RF06).
@@ -241,7 +242,7 @@ Não utilizamos Plane Detection como fluxo principal, nem óculos dedicados.
 - rótulos billboard;
 - UI de sessão (toast, sheet, quiz, resultado).
 
-Marcador: `[docs/images/marcador-wl03-equipment-target.png](docs/images/marcador-wl03-equipment-target.png)` (imprimir ~20 cm). Customização UV: `[docs/CUSTOMIZACAO.md](docs/CUSTOMIZACAO.md)`.
+Marcadores: [WL03 ~20 cm](docs/images/marcador-wl03-equipment-target.png) (principal) e [QR ~12 cm](docs/images/marcador-qr-target.png) (alternativo). Customização UV: `[docs/CUSTOMIZACAO.md](docs/CUSTOMIZACAO.md)`.
 
 ---
 
@@ -252,7 +253,7 @@ SafetyLens/
 │
 ├── Assets/
 │   ├── Editor/                 # Setup XR, cena, build iOS/Android, pós-process Xcode
-│   ├── Markers/                # PNG do Image Target
+│   ├── Markers/                # Image Targets: WL03 (20 cm) + QR (12 cm)
 │   ├── Models/EPI/             # FBX do capacete
 │   ├── Plugins/iOS/            # Share sheet nativo
 │   ├── ReferenceImages/        # XR Reference Image Library
@@ -263,7 +264,7 @@ SafetyLens/
 │
 ├── Packages/                   # manifest (AR Foundation 6.3.5, …)
 ├── ProjectSettings/
-├── Tools/                      # fix-xcode-module-verifier.sh
+├── Tools/                      # fix-xcode-module-verifier.sh + generate-qr-marker.py
 ├── plans/                      # planos de melhoria pós-auditoria
 │
 ├── docs/
@@ -334,7 +335,7 @@ Definidas em `Packages/manifest.json`. Obtidas pelo Unity Package Manager ao abr
 - Xcode (macOS) para deploy iOS;
 - Git;
 - iPhone com ARKit **ou** Android com ARCore;
-- Marcador impresso/exibido com **~20 cm** de largura.
+- Marcador impresso/exibido: WL03 com **~20 cm** de largura e/ou QR com **~12 cm**.
 
 ### Procedimento
 
@@ -377,7 +378,7 @@ cd ODS-Vision-SafetyLens
 
 1. Abra o app e autorize a **câmera**.
 2. Digite o ID do participante (ex.: `P01`) → **Abrir câmera**.
-3. Aponte para o marcador WL03 (~20 cm).
+3. Aponte para o marcador WL03 (~20 cm) **ou** o QR (~12 cm). A sessão fica no primeiro reconhecido.
 4. Aguarde o reconhecimento (cronômetro inicia).
 5. Para cada item (HOT → PINCH → EPI):
 
@@ -477,7 +478,8 @@ Capturas da **versão 1** (ordem do fluxo):
 
 ```text
 docs/images/
-├── marcador-wl03-equipment-target.png
+├── marcador-wl03-equipment-target.png   ← Image Target principal (~20 cm)
+├── marcador-qr-target.png               ← Image Target alternativo (~12 cm)
 └── v1/
     ├── interface/                    ← screenshots (01…12) ✅
     │   ├── 01-tela-inicial.PNG
@@ -511,13 +513,15 @@ Galeria completa na seção [17. Como Utilizar](#17-como-utilizar-a-aplicação)
 | ------------------ | -------------------------------- | ----------------------------- | ------------------------- | ------ |
 | Validação Editor   | SafetyLens → Validar projeto     | ARKit + ARCore + UV OK        | `VALIDACAO OK`            | ✅     |
 | Câmera sob demanda | Abrir app sem tocar Abrir câmera | Sem feed ativo                | Sessão inicia inativa     | ✅     |
-| Image Tracking     | Apontar marcador 20 cm           | Detecta target e inicia tempo | Detectado no iPhone 12    | ✅     |
-| Overlays A/B/C     | Após tracking                    | HOT/PINCH/EPI nas letras      | Âncoras UV estáveis       | ✅     |
+| Image Tracking WL03| Apontar marcador ~20 cm (tela/papel) | Detecta target e inicia tempo | Detectado no iPhone 12 (tela) | ✅     |
+| Image Tracking QR  | Apontar QR ~12 cm (tela)         | Detecta `SafetyLensQrTarget`  | Detectado no iPhone 12    | ✅     |
+| Overlays A/B/C     | Após tracking WL03               | HOT/PINCH/EPI nas letras      | Âncoras UV estáveis       | ✅     |
 | RF03 toque         | Confirmar sem tocar no AR        | Botão desabilitado            | Bloqueado                 | ✅     |
 | RF03 correto       | Toque no item + Confirmar        | Avança etapa                  | Funciona                  | ✅     |
 | Quiz               | Responder perguntas              | Feedback certo/errado         | Funciona                  | ✅     |
-| Export             | Finalizar sessão                 | JSON + CSV locais             | Funciona                  | ✅     |
+| Export             | Finalizar sessão                 | JSON + CSV (tempos/FPS/marcador) | Funciona               | ✅     |
 | Share iOS          | Compartilhar CSV                 | Share sheet                   | Funciona                  | ✅     |
+| EditMode           | Test Runner → Run All            | Todos verdes                  | 34/34                     | ✅     |
 | Android end-to-end | Build and Run ARCore             | Paridade com iOS              | _A registrar pela equipe_ | 🚧     |
 
 Roteiro ampliado: `[TESTE_DE_ACEITACAO.md](TESTE_DE_ACEITACAO.md)`.
@@ -536,10 +540,10 @@ Roteiro ampliado: `[TESTE_DE_ACEITACAO.md](TESTE_DE_ACEITACAO.md)`.
 ## 24. Limitações Conhecidas
 
 - Dependência de **marcador** visível e bem iluminado (WL03 ~20 cm ou QR ~12 cm).
-- Nota de rastreamento do marcador QR no `arcoreimg eval-img` (meta ≥ 75) ainda não conferida — ferramenta indisponível na máquina de desenvolvimento.
-- Em `TrackingState.Limited` o conteúdo pode sumir de forma abrupta (melhoria planejada).
-- Calibração fina de UV/escala ainda pode ser refinada (capacete vs letra C).
-- Share nativo completo apenas no **iOS** (Android planejado).
+- Nota `arcoreimg`: QR = **100** (acima da meta 75); WL03 = **10**. O iPhone 12 já rastreia o WL03 na prática; o QR é o alvo mais “legível” para o ARCore.
+- Em `TrackingState.Limited` há graça (~1,5 s) com banner; após o prazo o overlay some e a seleção zera (cronômetro não reseta).
+- Calibração fina de UV/escala ainda pode ser refinada (capacete vs letra C; layout do QR na tela).
+- Share nativo: iOS validado; Android implementado (Intent + FileProvider), QA end-to-end pendente.
 - Protocolo experimental completo (grupo controle 2D, SUS, retenção 7 dias) ainda em desenvolvimento no software.
 - UI em IMGUI: acessibilidade limitada (VoiceOver / Dynamic Type).
 - Build iOS exige workaround do **Module Verifier** do Xcode em alguns ambientes.
@@ -584,9 +588,13 @@ Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-po
 | RF03 toque + confirmação           | Equipe            | ✅     |
 | Quiz + export JSON/CSV             | Equipe            | ✅     |
 | Build / testes iPhone 12           | Equipe            | ✅     |
-| Documentação GitHub (este README)  | Equipe            | 🚧     |
+| Documentação GitHub (este README)  | Equipe            | ✅     |
 | Screenshots e vídeo (v1)           | Equipe            | ✅     |
+| RF04 tempos separados + RNF02 FPS  | Equipe            | ✅     |
+| Zonas vermelhas + marcador QR      | Equipe            | ✅     |
+| EditMode 34/34                     | Equipe            | ✅     |
 | Testes Android ARCore              | Equipe            | ⬜     |
+| Alvo impresso 20 cm                | Equipe            | ⬜     |
 | Experimento SUS / retenção 7 dias  | Equipe            | 🚧     |
 
 ---
@@ -637,12 +645,9 @@ Evita-se um único commit com todo o projeto. Branches/tags conforme necessidade
 
 ## 30. Melhorias Futuras
 
-- Calibração fina UV/escala nas letras A/B/C.
-- Comportamento suave em `TrackingState.Limited`.
-- Share nativo Android.
-- Testes automatizados EditMode (UV, CSV, sanitize).
+- Calibração fina UV/escala nas letras A/B/C e no layout do QR.
 - Protocolo completo SUS + retenção 7 dias no app.
-- Screenshots e evidências oficiais em `docs/images/v1/`.
+- QA no alvo impresso de 20 cm e Android ponta a ponta (dependem da equipe).
 
 Ver também `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-pos-auditoria.md)`.
 
@@ -691,7 +696,7 @@ Uso e redistribuição devem respeitar as políticas da instituição e crédito
 - [x] README no formato do modelo da disciplina
 - [x] Versões das tecnologias registradas
 - [x] Arquitetura apresentada (`docs/diagrams/arquitetura.svg`)
-- [x] Funcionamento da RA explicado (Image Tracking + UV A/B/C)
+- [x] Funcionamento da RA explicado (Image Tracking WL03 + QR, UV A/B/C)
 - [x] Estrutura de pastas documentada
 - [x] Scripts principais descritos
 - [x] Procedimento de instalação
@@ -710,4 +715,4 @@ Uso e redistribuição devem respeitar as políticas da instituição e crédito
 
 ---
 
-> Se outra equipe receber apenas este repositório, deve conseguir compreender a proposta, configurar o Unity 6000.3.0f1, gerar o build iOS e reproduzir o fluxo Image Tracking → inspeção A/B/C → quiz → export — desde que tenha iPhone com ARKit e o marcador de ~20 cm.
+> Se outra equipe receber apenas este repositório, deve conseguir compreender a proposta, configurar o Unity 6000.3.0f1, gerar o build iOS e reproduzir o fluxo Image Tracking → inspeção → quiz → export — desde que tenha iPhone com ARKit e o marcador WL03 (~20 cm) ou o QR (~12 cm).

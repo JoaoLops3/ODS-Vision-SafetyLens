@@ -76,9 +76,11 @@ Cobertura: `TrackingLossGate`, `LocalPositionOnMarker` (UV→metros, inclusive U
 | 18 | Artigo / Android | Fluxo completo **em aparelho Android com ARCore** (Build and Run) | Paridade com iOS — pendência explícita, depende de aparelho da equipe | — | [ ] |
 
 > **Pendências que não se resolvem por código:** itens 11 (alvo impresso de 20 cm) e 18 (Android
-> ponta a ponta) dependem de papel impresso e aparelho físico com a equipe. A nota do marcador QR
-> no `arcoreimg eval-img` (meta ≥ 75) também está pendente — a ferramenta não estava disponível
-> na máquina de desenvolvimento.
+> ponta a ponta) dependem de papel impresso e aparelho físico com a equipe.
+>
+> **Nota `arcoreimg eval-img` (2026-10-15):** QR `safetylens-qr-target.png` = **100** (meta ≥ 75).
+> WL03 `safetylens-equipment-target.png` = **10** — tracking no iPhone 12 já foi validado na prática;
+> a nota baixa do ARCore não invalida o alvo, mas o QR é o marcador mais “legível” para o ARCore.
 
 **Registro por execução**
 

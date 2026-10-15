@@ -12,18 +12,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 848409ee8ba454f42a5ddff137688a27, type: 3}
   m_Name: SafetyLensReferenceImageLibrary
   m_EditorClassIdentifier: Unity.XR.ARSubsystems::UnityEngine.XR.ARSubsystems.XRReferenceImageLibrary
-  m_GuidLow: 5601533695876893414
-  m_GuidHigh: 15992745164132987029
+  m_GuidLow: 4787489234196383837
+  m_GuidHigh: 15373419099645026434
   m_DataStore:
     m_Storage: []
   m_Images:
   - m_SerializedGuid:
-      m_GuidLow: 5205411412479220570
-      m_GuidHigh: 10618455561864150437
+      m_GuidLow: 5478292601069345830
+      m_GuidHigh: 15973363512177015968
     m_SerializedTextureGuid:
       m_GuidLow: 8430294198848031387
       m_GuidHigh: 112073939971169848
     m_Size: {x: 0.2, y: 0.133333}
     m_SpecifySize: 1
     m_Name: SafetyLensEquipmentTarget
+    m_Texture: {fileID: 0}
+  - m_SerializedGuid:
+      m_GuidLow: 5673847923397320730
+      m_GuidHigh: 668355236439054767
+    m_SerializedTextureGuid:
+      m_GuidLow: 5242272623955287930
+      m_GuidHigh: 10709761966091068838
+    m_Size: {x: 0.12, y: 0.12}
+    m_SpecifySize: 1
+    m_Name: SafetyLensQrTarget
     m_Texture: {fileID: 0}
