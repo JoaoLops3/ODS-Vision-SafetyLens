@@ -101,6 +101,8 @@ namespace Facens.SafetyLens
             string participantId,
             SafetyLensScenario scenario,
             float elapsedSeconds,
+            float inspectionSeconds,
+            float quizSeconds,
             string startedAtIso,
             string finishedAtIso)
         {
@@ -110,6 +112,8 @@ namespace Facens.SafetyLens
                 scenarioId = scenario?.id,
                 scenarioTitle = scenario?.title,
                 elapsedSeconds = elapsedSeconds,
+                inspectionSeconds = inspectionSeconds,
+                quizSeconds = quizSeconds,
                 errorCount = ErrorCount,
                 hazardsConfirmed = HazardConfirmedCount,
                 hazardsTotal = _hazardDone.Length,

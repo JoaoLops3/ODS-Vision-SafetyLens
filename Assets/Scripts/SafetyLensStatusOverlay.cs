@@ -513,15 +513,17 @@ namespace Facens.SafetyLens
 
             var headline = ratio >= 0.999f ? "Excelente trabalho!" : "Treinamento concluído";
             y += Paragraph(x, y, w, headline, Centered(_display)) + U(T.SpaceXs);
-            var summary = $"{c.ParticipantId}, você identificou {c.HazardConfirmedCount} de {c.HazardCount} itens de segurança.";
+            var summary = $"{c.ParticipantId}, você identificou {c.HazardConfirmedCount} de {c.HazardCount} itens"
+                          + $" de segurança em {FormatTime(c.ElapsedSeconds)}.";
             y += Paragraph(x, y, w, summary, Centered(_bodyLarge)) + U(T.SpaceLg);
 
+            // RF04: inspeção e quiz medidos em separado; o total já aparece no resumo acima.
             var gap = U(T.SpaceMd);
             var cellW = (w - gap * 2f) / 3f;
             var cellH = U(78f);
-            DrawMetric(new Rect(x, y, cellW, cellH), FormatTime(c.ElapsedSeconds), "Tempo");
-            DrawMetric(new Rect(x + cellW + gap, y, cellW, cellH), c.ErrorCount.ToString(), c.ErrorCount == 1 ? "Erro" : "Erros");
-            DrawMetric(new Rect(x + (cellW + gap) * 2f, y, cellW, cellH), $"{c.HazardConfirmedCount}/{c.HazardCount}", "Itens");
+            DrawMetric(new Rect(x, y, cellW, cellH), FormatTime(c.InspectionSeconds), "Inspeção");
+            DrawMetric(new Rect(x + cellW + gap, y, cellW, cellH), FormatTime(c.QuizSeconds), "Quiz");
+            DrawMetric(new Rect(x + (cellW + gap) * 2f, y, cellW, cellH), c.ErrorCount.ToString(), c.ErrorCount == 1 ? "Erro" : "Erros");
             y += cellH + U(T.SpaceMd);
 
             var savedTitle = c.ExportFailed ? "Não foi possível salvar" : "Salvo offline neste iPhone";
@@ -656,7 +658,9 @@ namespace Facens.SafetyLens
                 FormatSessionWhen(record),
                 _caption);
 
-            var meta = $"{FormatTime(record.elapsedSeconds)}  ·  {record.errorCount} erro(s)  ·  quiz {record.quizCorrect}/{record.quizTotal}";
+            // Sessões antigas não têm inspectionSeconds (ficava tudo em elapsedSeconds).
+            var inspection = record.inspectionSeconds > 0f ? record.inspectionSeconds : record.elapsedSeconds;
+            var meta = $"{FormatTime(inspection)} inspeção  ·  {record.errorCount} erro(s)  ·  quiz {record.quizCorrect}/{record.quizTotal}";
             Label(new Rect(r.x + pad, r.y + pad + U(44f), textW, U(20f)), meta, _captionStrong);
 
             var share = new Rect(r.xMax - pad - btnW, r.y + (r.height - U(40f)) * 0.5f, btnW, U(40f));

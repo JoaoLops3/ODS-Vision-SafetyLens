@@ -36,6 +36,8 @@ namespace Facens.SafetyLens
         [SerializeField] int limitedGraceMinFrames = 10;
         float _startedAt = -1f;
         float _finishedAt = -1f;
+        /// <summary>RF04: momento da confirmação do último risco (fim da inspeção, início do quiz).</summary>
+        float _inspectionEndedAt = -1f;
         DateTime _startedUtc;
         DateTime _finishedUtc;
 
@@ -101,6 +103,18 @@ namespace Facens.SafetyLens
             _startedAt < 0f
                 ? 0f
                 : Mathf.Max(0f, (_finishedAt >= 0f ? _finishedAt : Time.realtimeSinceStartup) - _startedAt);
+
+        /// <summary>RF04: tempo do reconhecimento do marcador à confirmação do último risco.</summary>
+        public float InspectionSeconds =>
+            _startedAt < 0f
+                ? 0f
+                : Mathf.Max(0f, (_inspectionEndedAt >= 0f ? _inspectionEndedAt : Time.realtimeSinceStartup) - _startedAt);
+
+        /// <summary>RF04: tempo entre o fim da inspeção e a última resposta do quiz.</summary>
+        public float QuizSeconds =>
+            _inspectionEndedAt < 0f
+                ? 0f
+                : Mathf.Max(0f, (_finishedAt >= 0f ? _finishedAt : Time.realtimeSinceStartup) - _inspectionEndedAt);
 
         void Awake()
         {
@@ -264,6 +278,7 @@ namespace Facens.SafetyLens
             _progress = new SafetyLensInspectionProgress(HazardCount);
             _startedAt = -1f;
             _finishedAt = -1f;
+            _inspectionEndedAt = -1f;
             ExportSummary = string.Empty;
             ExportFailed = false;
             Phase = AppPhase.Scanning;
@@ -540,6 +555,8 @@ namespace Facens.SafetyLens
 
             if (inspectionDone)
             {
+                // RF04: aqui fecha o tempo de inspeção; o que vier depois é tempo de quiz.
+                _inspectionEndedAt = Time.realtimeSinceStartup;
                 _gate.Reset();
                 _targetUnstable = false;
                 Phase = AppPhase.Quiz;
@@ -603,6 +620,8 @@ namespace Facens.SafetyLens
                 ParticipantId,
                 _scenario,
                 ElapsedSeconds,
+                InspectionSeconds,
+                QuizSeconds,
                 _startedUtc.ToString("o"),
                 _finishedUtc.ToString("o"));
 
@@ -616,7 +635,7 @@ namespace Facens.SafetyLens
                 Debug.LogError($"[SafetyLens] Falha ao salvar sessao: {ex}");
             }
             ExportSummary =
-                $"Tempo {ElapsedSeconds:F0}s · Erros {ErrorCount} · Quiz {QuizCorrectCount}/{QuizCount}";
+                $"Inspeção {InspectionSeconds:F0}s · Quiz {QuizSeconds:F0}s · Erros {ErrorCount} · Acertos {QuizCorrectCount}/{QuizCount}";
             StatusMessage = "Sessão concluída. Dados salvos neste aparelho.";
             Debug.Log(
                 $"[SafetyLens] Sessao concluida em {ElapsedSeconds:F1}s com {ErrorCount} erro(s).\n" +
@@ -732,6 +751,7 @@ namespace Facens.SafetyLens
             _progress = new SafetyLensInspectionProgress(HazardCount);
             _startedAt = -1f;
             _finishedAt = -1f;
+            _inspectionEndedAt = -1f;
             ExportSummary = string.Empty;
             ExportFailed = false;
             ShareStatus = string.Empty;

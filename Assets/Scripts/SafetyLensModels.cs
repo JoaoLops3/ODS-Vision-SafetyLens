@@ -102,6 +102,10 @@ namespace Facens.SafetyLens
         public string scenarioId;
         public string scenarioTitle;
         public float elapsedSeconds;
+        /// <summary>RF04: do reconhecimento do marcador à confirmação do último risco.</summary>
+        public float inspectionSeconds;
+        /// <summary>RF04: da primeira pergunta à última resposta do quiz.</summary>
+        public float quizSeconds;
         public int errorCount;
         public int hazardsConfirmed;
         public int hazardsTotal;

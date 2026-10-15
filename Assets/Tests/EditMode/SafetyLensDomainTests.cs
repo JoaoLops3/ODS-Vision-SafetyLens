@@ -111,11 +111,15 @@ namespace Facens.SafetyLens.Tests
                 {
                     participantId = "T1",
                     elapsedSeconds = 45.5f,
+                    inspectionSeconds = 30.25f,
+                    quizSeconds = 15.25f,
                     errorCount = 0
                 };
                 var csv = SafetyLensSessionStore.BuildCsv(new[] { record });
                 Assert.IsTrue(csv.Contains("45.50"), csv);
                 Assert.IsFalse(csv.Contains("45,50"), csv);
+                Assert.IsTrue(csv.Contains("30.25"), csv);
+                Assert.IsTrue(csv.Contains("15.25"), csv);
             }
             finally
             {
