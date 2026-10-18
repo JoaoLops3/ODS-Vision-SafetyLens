@@ -188,6 +188,50 @@ namespace Facens.SafetyLens
                 _host.StartCoroutine(RecoverArCameraBackground());
         }
 
+        /// <summary>
+        /// QR viewer: esconde o feed da câmera e usa fundo sólido do tema.
+        /// O marcador WL03 não chama isto — continua com a câmera AR.
+        /// </summary>
+        public void SetCameraFeedVisible(bool visible)
+        {
+            var manager = UnityEngine.Object.FindFirstObjectByType<ARCameraManager>(FindObjectsInactive.Include);
+            var background = UnityEngine.Object.FindFirstObjectByType<ARCameraBackground>(FindObjectsInactive.Include);
+            Camera cam = null;
+            if (manager != null)
+                cam = manager.GetComponent<Camera>();
+            if (cam == null)
+                cam = Camera.main;
+
+            if (visible)
+            {
+                if (manager != null)
+                {
+                    manager.requestedBackgroundRenderingMode = CameraBackgroundRenderingMode.BeforeOpaques;
+                    manager.enabled = true;
+                }
+
+                if (background != null)
+                    background.enabled = true;
+
+                // AR Foundation assume Depth; não forçar SolidColor no restore.
+                if (cam != null)
+                    cam.clearFlags = CameraClearFlags.Depth;
+            }
+            else
+            {
+                if (background != null)
+                    background.enabled = false;
+                if (manager != null)
+                    manager.enabled = false;
+
+                if (cam != null)
+                {
+                    cam.clearFlags = CameraClearFlags.SolidColor;
+                    cam.backgroundColor = SafetyLensTheme.QrViewerBackdrop;
+                }
+            }
+        }
+
         /// <summary>Atualiza a mensagem P1-8 a partir de <see cref="ARSession.state"/>.</summary>
         public void RefreshAvailability()
         {

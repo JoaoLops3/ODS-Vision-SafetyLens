@@ -12,13 +12,19 @@ namespace Facens.SafetyLens
     {
         readonly Dictionary<string, SafetyLensHazardVisual> _visuals = new();
         GameObject _contentRoot;
+        Transform _qrViewerPivot;
         Camera _arCamera;
+        bool _qrViewerActive;
+        float _qrViewerPitch;
 
         /// <summary>Visuais por hazard id (toque e pulso).</summary>
         public IReadOnlyDictionary<string, SafetyLensHazardVisual> Visuals => _visuals;
 
         /// <summary>True depois de <see cref="Ensure"/>.</summary>
         public bool HasContent => _contentRoot != null;
+
+        /// <summary>True no modo QR: models na frente da câmera, desacoplados do Image Target.</summary>
+        public bool IsQrViewerActive => _qrViewerActive;
 
         /// <summary>Cria o conteúdo uma vez e ancora no transform do marcador.</summary>
         public void Ensure(SafetyLensScenario scenario)
@@ -44,6 +50,7 @@ namespace Facens.SafetyLens
         /// <summary>
         /// Parentaliza no marcador e posiciona por UV (letras A/B/C ou altTargets).
         /// Placas billboardam; o EPI fica no espaço do marcador.
+        /// Não usar no caminho QR — ver <see cref="EnterQrViewer"/>.
         /// </summary>
         public void AlignToMarker(
             Transform marker,
@@ -52,6 +59,7 @@ namespace Facens.SafetyLens
             string sessionTargetName,
             bool targetFound)
         {
+            if (_qrViewerActive) return;
             if (_contentRoot == null || !targetFound || marker == null || scenario?.hazards == null)
                 return;
 
@@ -80,6 +88,85 @@ namespace Facens.SafetyLens
             }
 
             FaceHazardsTowardCamera();
+        }
+
+        /// <summary>
+        /// Caminho QR: tira os models do Image Target e coloca um pivot na frente da câmera
+        /// para orbit com o dedo. O marcador WL03 não chama este método.
+        /// </summary>
+        public void EnterQrViewer(Camera camera, SafetyLensScenario scenario)
+        {
+            if (scenario?.hazards == null) return;
+            Ensure(scenario);
+
+            var cam = camera != null ? camera : ResolveArCamera();
+            if (cam == null || _contentRoot == null) return;
+
+            if (_qrViewerPivot == null)
+            {
+                var pivotGo = new GameObject("SafetyLens_QrViewerPivot");
+                _qrViewerPivot = pivotGo.transform;
+            }
+
+            _qrViewerPivot.SetParent(cam.transform, false);
+            _qrViewerPivot.localPosition = new Vector3(0f, 0f, SafetyLensTheme.QrViewerDistance);
+            _qrViewerPivot.localRotation = Quaternion.identity;
+            _qrViewerPitch = 0f;
+
+            _contentRoot.transform.SetParent(_qrViewerPivot, false);
+            _contentRoot.transform.localPosition = Vector3.zero;
+            _contentRoot.transform.localRotation = Quaternion.identity;
+            _contentRoot.transform.localScale = Vector3.one * SafetyLensTheme.QrViewerRootScale;
+
+            var count = scenario.hazards.Length;
+            for (var i = 0; i < count; i++)
+            {
+                var hazard = scenario.hazards[i];
+                if (!_visuals.TryGetValue(hazard.id, out var visual) || visual.Root == null) continue;
+
+                var local = SafetyLensQrViewerLayout.LocalPositionForHazard(i, count);
+                visual.Root.localPosition = local;
+                visual.Root.localRotation = Quaternion.identity;
+                if (visual.Zone != null)
+                {
+                    var zonePos = local;
+                    zonePos.y = SafetyLensTheme.ArZoneLift;
+                    visual.Zone.localPosition = zonePos;
+                }
+            }
+
+            FaceHazardsTowardCamera();
+            _qrViewerActive = true;
+        }
+
+        /// <summary>Sai do viewer QR (reinício, fim da inspeção ou caminho marcador).</summary>
+        public void ExitQrViewer()
+        {
+            _qrViewerActive = false;
+            _qrViewerPitch = 0f;
+            if (_contentRoot != null
+                && _qrViewerPivot != null
+                && _contentRoot.transform.parent == _qrViewerPivot)
+                _contentRoot.transform.SetParent(null, true);
+
+            if (_qrViewerPivot != null)
+            {
+                Object.Destroy(_qrViewerPivot.gameObject);
+                _qrViewerPivot = null;
+            }
+        }
+
+        /// <summary>Orbit do pivot QR: yaw/pitch locais com pitch limitado.</summary>
+        public void ApplyQrViewerOrbit(float deltaYawDegrees, float deltaPitchDegrees)
+        {
+            if (!_qrViewerActive || _qrViewerPivot == null) return;
+
+            var yaw = _qrViewerPivot.localEulerAngles.y + deltaYawDegrees;
+            _qrViewerPitch = Mathf.Clamp(
+                _qrViewerPitch + deltaPitchDegrees,
+                -SafetyLensTheme.QrViewerPitchClamp,
+                SafetyLensTheme.QrViewerPitchClamp);
+            _qrViewerPivot.localRotation = Quaternion.Euler(_qrViewerPitch, yaw, 0f);
         }
 
         /// <summary>Tint, escala, anel e zona conforme progresso e fase.</summary>
@@ -210,6 +297,8 @@ namespace Facens.SafetyLens
             foreach (var visual in _visuals.Values)
                 visual.DestroyMaterials();
             _visuals.Clear();
+
+            ExitQrViewer();
 
             if (_contentRoot != null)
             {

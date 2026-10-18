@@ -35,6 +35,9 @@ namespace Facens.SafetyLens
         SafetyLensScenario _scenario;
         SafetyLensInspectionProgress _progress;
         int _perfFrames;
+        bool _qrOrbitDragging;
+        Vector2 _qrOrbitStartPos;
+        Vector2 _qrOrbitLastPos;
 
         [Header("Tracking Limited (P1-6)")]
         [SerializeField] float limitedGraceSeconds = SafetyLensAppConstants.TrackingGraceSeconds;
@@ -54,6 +57,16 @@ namespace Facens.SafetyLens
 
         /// <summary>True durante a graça Limited (P1-6).</summary>
         public bool TargetUnstable => _tracking != null && _tracking.TargetUnstable;
+
+        /// <summary>Sessão travada no Image Target QR (tela). O marcador WL03 permanece no fluxo clássico.</summary>
+        public bool IsQrSession =>
+            string.Equals(
+                _tracking?.SessionTargetName,
+                SafetyLensAppConstants.QrTargetName,
+                StringComparison.Ordinal);
+
+        /// <summary>Viewer 3D do QR ativo (models na frente da câmera, orbit com o dedo).</summary>
+        public bool IsQrViewerActive => _content != null && _content.IsQrViewerActive;
 
         /// <summary>Aviso persistente em Limited/None dentro do prazo de graça. Null fora de Unstable.</summary>
         public string TargetStatusMessage => _tracking?.TargetStatusMessage;
@@ -112,13 +125,17 @@ namespace Facens.SafetyLens
         /// <summary>True após toque no overlay AR do item ativo — habilita “Confirmar item”.</summary>
         public bool CurrentHazardArSelected => _progress != null && _progress.CurrentHazardArSelected;
 
-        /// <summary>RF03: confirmar só com marcador visível + seleção por toque no overlay.</summary>
+        /// <summary>
+        /// RF03: no marcador exige tracking estável; no QR exige viewer ativo
+        /// (já desacoplado do Image Target).
+        /// </summary>
         public bool CanConfirmCurrentHazard =>
             Phase == AppPhase.RiskInspection
-            && TargetFound
-            && !TargetUnstable
             && CurrentHazard != null
-            && CurrentHazardArSelected;
+            && CurrentHazardArSelected
+            && (IsQrSession
+                ? IsQrViewerActive
+                : TargetFound && !TargetUnstable);
 
         /// <summary>Hazard da vez, ou null fora da inspeção / sem progresso.</summary>
         public SafetyLensHazard CurrentHazard
@@ -153,6 +170,10 @@ namespace Facens.SafetyLens
 
         /// <summary>RF12: cenário com telemetria habilitada (última pergunta do quiz abre a leitura).</summary>
         public bool TelemetryEnabled => SafetyLensTelemetry.IsEnabled(_scenario);
+
+        /// <summary>Config RF12 do cenário (amostras/limiares). Null se desabilitada.</summary>
+        public SafetyLensTelemetryConfig TelemetryConfig =>
+            SafetyLensTelemetry.IsEnabled(_scenario) ? _scenario.telemetry : null;
 
         /// <summary>Ficha do equipamento do cenário. Null só se o JSON estiver inválido (boot já valida).</summary>
         public SafetyLensEquipment Equipment => _scenario?.equipment;
@@ -309,29 +330,48 @@ namespace Facens.SafetyLens
             _clock.MarkInspectionStarted(Time.realtimeSinceStartup, DateTime.UtcNow);
             _timeline.MarkMarkerFound(Time.realtimeSinceStartup);
             _content.Ensure(_scenario);
-            _content.SetContentActive(
-                Phase == AppPhase.Scanning
-                || Phase == AppPhase.EquipmentBrief
-                || Phase == AppPhase.RiskInspection);
-            AlignContentToMarker();
+
+            // QR: nunca cola models em cima do código. WL03: overlays no marcador como antes.
+            if (IsQrSession)
+            {
+                if (!(Phase == AppPhase.RiskInspection && IsQrViewerActive))
+                    _content.SetContentActive(false);
+            }
+            else
+            {
+                _content.SetContentActive(
+                    Phase == AppPhase.Scanning
+                    || Phase == AppPhase.EquipmentBrief
+                    || Phase == AppPhase.RiskInspection);
+                AlignContentToMarker();
+            }
+
             _content.Refresh(_scenario, _progress, Phase);
 
             if (_flow.TryEnterEquipmentBrief())
             {
                 _tracking.MarkEverFound();
-                ShowFeedback("Marcador reconhecido", false);
-                StatusMessage = "Leia a ficha do equipamento e inicie a inspeção.";
+                ShowFeedback(IsQrSession ? "QR reconhecido" : "Marcador reconhecido", false);
+                StatusMessage = IsQrSession
+                    ? "Leia a ficha. Em seguida os modelos abrem para girar com o dedo."
+                    : "Leia a ficha do equipamento e inicie a inspeção.";
             }
         }
 
         void OnMarkerLost()
         {
+            // Viewer QR já desacoplou do Image Target — perda do QR na tela não esconde os models.
+            if (IsQrSession && Phase == AppPhase.RiskInspection && IsQrViewerActive)
+                return;
+
             _content.SetContentActive(false);
             _progress?.ClearArSelection();
             if (Phase == AppPhase.RiskInspection
                 || Phase == AppPhase.Scanning
                 || Phase == AppPhase.EquipmentBrief)
-                StatusMessage = "Marcador perdido. Aponte a câmera para a placa de novo.";
+                StatusMessage = IsQrSession
+                    ? "QR perdido. Enquadre o QR na tela do computador."
+                    : "Marcador perdido. Aponte a câmera para a placa de novo.";
         }
 
         /// <summary>Fecha a ficha e entra na inspeção. No-op sem tracking estável.</summary>
@@ -341,9 +381,24 @@ namespace Facens.SafetyLens
             _timeline.MarkBriefDone(Time.realtimeSinceStartup);
             if (!_flow.TryEnterRiskInspection()) return;
             StatusMessage = string.Empty;
-            _content.SetContentActive(true);
+
+            if (IsQrSession)
+            {
+                _content.EnterQrViewer(_content.ResolveArCamera(), _scenario);
+                _content.SetContentActive(true);
+                // Troca de tela: some o feed da câmera; models ficam no fundo sólido do tema.
+                _tracking.SetCameraFeedVisible(false);
+                _qrOrbitDragging = false;
+                ShowFeedback("Arraste para girar · toque no item destacado", false);
+            }
+            else
+            {
+                _content.SetContentActive(true);
+                AlignContentToMarker();
+                ShowFeedback("Inspeção iniciada", false);
+            }
+
             _content.Refresh(_scenario, _progress, Phase);
-            ShowFeedback("Inspeção iniciada", false);
         }
 
         void AlignContentToMarker()
@@ -360,7 +415,8 @@ namespace Facens.SafetyLens
 
         void Update()
         {
-            if (Phase == AppPhase.Telemetry)
+            // Marcador: amostra ao vivo. QR: tabela estática — não anima a amostra na UI.
+            if (Phase == AppPhase.Telemetry && !IsQrSession)
                 _telemetry.Refresh(_scenario.telemetry, TelemetryPhaseSeconds, force: false);
 
             if (Phase == AppPhase.RiskInspection)
@@ -389,19 +445,76 @@ namespace Facens.SafetyLens
                     StatusMessage = ArAvailabilityMessage;
             }
 
-            if (Phase != AppPhase.RiskInspection || !TargetFound || Input.touchCount != 1) return;
+            if (Phase != AppPhase.RiskInspection || Input.touchCount != 1) return;
+
+            if (IsQrSession && IsQrViewerActive)
+            {
+                HandleQrViewerTouch(Input.GetTouch(0));
+                return;
+            }
+
+            if (!TargetFound || TargetUnstable) return;
 
             var touch = Input.GetTouch(0);
             if (touch.phase != TouchPhase.Ended || SafetyLensStatusOverlay.IsTouchOverOverlay(touch.position))
                 return;
 
-            if (TargetUnstable) return;
+            TryPickHazardAt(touch.position);
+        }
+
+        /// <summary>QR: arraste = orbit; toque curto = seleção RF03. Ignora toques na UI IMGUI.</summary>
+        void HandleQrViewerTouch(Touch touch)
+        {
+            if (SafetyLensStatusOverlay.IsTouchOverOverlay(touch.position))
+            {
+                _qrOrbitDragging = false;
+                return;
+            }
+
+            switch (touch.phase)
+            {
+                case TouchPhase.Began:
+                    _qrOrbitDragging = false;
+                    _qrOrbitStartPos = touch.position;
+                    _qrOrbitLastPos = touch.position;
+                    break;
+
+                case TouchPhase.Moved:
+                case TouchPhase.Stationary:
+                {
+                    if (!_qrOrbitDragging
+                        && Vector2.Distance(touch.position, _qrOrbitStartPos)
+                            >= SafetyLensTheme.QrViewerDragThresholdPx)
+                        _qrOrbitDragging = true;
+
+                    if (!_qrOrbitDragging) break;
+
+                    var delta = touch.position - _qrOrbitLastPos;
+                    _qrOrbitLastPos = touch.position;
+                    _content.ApplyQrViewerOrbit(
+                        -delta.x * SafetyLensTheme.QrViewerOrbitSensitivity,
+                        delta.y * SafetyLensTheme.QrViewerOrbitSensitivity);
+                    break;
+                }
+
+                case TouchPhase.Ended:
+                case TouchPhase.Canceled:
+                    if (!_qrOrbitDragging)
+                        TryPickHazardAt(touch.position);
+                    _qrOrbitDragging = false;
+                    break;
+            }
+        }
+
+        void TryPickHazardAt(Vector2 screenPosition)
+        {
+            if (CurrentHazard == null) return;
 
             var camera = _content.ResolveArCamera();
             if (camera == null) return;
 
-            var tag = _content.PickHazard(camera, touch.position);
-            if (tag == null || CurrentHazard == null) return;
+            var tag = _content.PickHazard(camera, screenPosition);
+            if (tag == null) return;
 
             if (tag.hazardId == CurrentHazard.id)
                 SelectCurrentHazardFromAr();
@@ -416,7 +529,14 @@ namespace Facens.SafetyLens
         /// <summary>RF03 — primeiro passo: toque no overlay AR do item ativo. Só depois o botão confirma.</summary>
         void SelectCurrentHazardFromAr()
         {
-            if (Phase != AppPhase.RiskInspection || !TargetFound || CurrentHazard == null) return;
+            if (Phase != AppPhase.RiskInspection || CurrentHazard == null) return;
+            if (IsQrSession)
+            {
+                if (!IsQrViewerActive) return;
+            }
+            else if (!TargetFound)
+                return;
+
             if (!_progress.SelectCurrentHazardFromAr()) return;
 
             ShowFeedback($"Selecionado: {CurrentHazard.label}. Confirme abaixo.", false);
@@ -442,6 +562,8 @@ namespace Facens.SafetyLens
                 _flow.TryEnterQuiz();
                 QuizSelectedIndex = -1;
                 _content.SetContentActive(false);
+                _content.ExitQrViewer();
+                _tracking.SetCameraFeedVisible(true);
                 _tracking.SetCameraActive(false);
                 ShowFeedback("Todos os itens identificados", false);
             }
@@ -494,9 +616,22 @@ namespace Facens.SafetyLens
             if (!_flow.TryEnterTelemetry()) return;
             _telemetry.Begin(Time.realtimeSinceStartup);
             _content.SetContentActive(false);
-            _tracking.SetCameraActive(true);
+            _content.ExitQrViewer();
+
+            if (IsQrSession)
+            {
+                // QR: tela de tabela, sem câmera. Marcador WL03 mantém o feed AR.
+                _tracking.SetCameraActive(false);
+                _tracking.SetCameraFeedVisible(false);
+                StatusMessage = "Tabela da leitura simulada. Confira Ideal → Cuidado → Perigoso.";
+            }
+            else
+            {
+                _tracking.SetCameraActive(true);
+                StatusMessage = "Leitura do equipamento. Observe a mudança de status e conclua.";
+            }
+
             _telemetry.Refresh(_scenario.telemetry, TelemetryPhaseSeconds, force: true);
-            StatusMessage = "Leitura do equipamento. Observe a mudança de status e conclua.";
             Debug.Log("[SafetyLens] Fase de telemetria iniciada (RF12).");
         }
 
@@ -504,7 +639,25 @@ namespace Facens.SafetyLens
         public void CompleteTelemetry()
         {
             if (Phase != AppPhase.Telemetry) return;
-            _telemetry.Refresh(_scenario.telemetry, TelemetryPhaseSeconds, force: false);
+            // QR: grava a última amostra da tabela (Perigoso). Marcador: amostra ao vivo.
+            if (IsQrSession)
+            {
+                var lastAt = 0f;
+                var samples = _scenario?.telemetry?.samples;
+                if (samples != null)
+                {
+                    for (var i = 0; i < samples.Length; i++)
+                    {
+                        if (samples[i] != null && samples[i].atSeconds > lastAt)
+                            lastAt = samples[i].atSeconds;
+                    }
+                }
+
+                _telemetry.Refresh(_scenario.telemetry, lastAt, force: true);
+            }
+            else
+                _telemetry.Refresh(_scenario.telemetry, TelemetryPhaseSeconds, force: false);
+
             _timeline.MarkTelemetryEnded(Time.realtimeSinceStartup);
             FinishSession();
         }
@@ -569,6 +722,7 @@ namespace Facens.SafetyLens
         public void RestartSession()
         {
             _content.DestroyContent();
+            _tracking.SetCameraFeedVisible(true);
             _tracking.ResetLock();
             _tracking.ConfigureGate(limitedGraceSeconds, limitedGraceMinFrames);
             EnterIdentification();
