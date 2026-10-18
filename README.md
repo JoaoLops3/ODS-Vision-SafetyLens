@@ -222,12 +222,16 @@ Há **dois marcadores** na Reference Image Library:
 
 | Marcador | Nome na library | Tamanho físico | Âncoras |
 |---|---|---|---|
-| Placa WL03 (principal) | `SafetyLensEquipmentTarget` | 20 × 13,3 cm | Letras A/B/C (UV do hazard) |
-| QR Code (alternativo) | `SafetyLensQrTarget` | 12 × 12 cm | Layout `altTargets` do cenário |
+| Placa WL03 (principal) | `SafetyLensEquipmentTarget` | 20 × 13,3 cm | Overlays no marcador (UV A/B/C) |
+| QR Code (alternativo) | `SafetyLensQrTarget` | 12 × 12 cm | Scan na tela → viewer 3D com orbit |
 
-O QR **não é decodificado**: ele é rastreado como imagem, igual à placa. A sessão fica presa ao
-**primeiro** marcador reconhecido (o outro é ignorado até reiniciar) e o marcador usado é gravado
-no JSON/CSV (`markerName`). Arte do QR reproduzível via `Tools/generate-qr-marker.py`.
+O QR **não é decodificado** como código de barras: ele é um Image Target. A sessão trava no
+**primeiro** alvo reconhecido (`markerName` no CSV). Arte do QR: `Tools/generate-qr-marker.py`.
+
+**Dois modos após a ficha:**
+
+- **WL03:** models continuam ancorados na placa (fluxo clássico).
+- **QR (sempre na tela do computador):** models **não** ficam em cima do QR; ao tocar **Iniciar inspeção** abre um viewer com **fundo sólido** (câmera desligada) — arraste para girar, toque no item (RF03).
 
 Não utilizamos Plane Detection como fluxo principal, nem óculos dedicados.
 
@@ -236,12 +240,12 @@ Não utilizamos Plane Detection como fluxo principal, nem óculos dedicados.
 ![Fluxo de RA](docs/diagrams/fluxo-ra.svg)
 
 1. Usuário informa ID e toca em **Abrir câmera** (`ARSession` ativa).
-2. `ARTrackedImageManager` analisa o feed em busca de `SafetyLensEquipmentTarget` **ou** `SafetyLensQrTarget`.
-3. Com `TrackingState.Tracking`, obtém-se a pose do marcador, trava a sessão nesse alvo e inicia o cronômetro de inspeção (RF04).
-4. Abre a **ficha do equipamento**. O tempo da leitura entra em `inspectionSeconds`.
-5. Conteúdo é parentalizado no `ARTrackedImage`; posições vêm de **UV** (`u`/`v`) — letras A/B/C no WL03, layout `altTargets` no QR.
-6. Toque no item ativo **seleciona** (RF03); o botão **Confirmar item** só então conclui o passo.
-7. Após HOT → PINCH → EPI, segue quiz, telemetria (se habilitada) e exportação local (RF06), com tempos por etapa no CSV.
+2. `ARTrackedImageManager` busca `SafetyLensEquipmentTarget` **ou** `SafetyLensQrTarget`.
+3. Com `TrackingState.Tracking`, trava a sessão nesse alvo e inicia o cronômetro (RF04).
+4. Abre a **ficha do equipamento** (no QR, sem overlays em cima do código).
+5. **WL03:** conteúdo parentalizado no `ARTrackedImage` (UV). **QR:** viewer na frente da câmera (`SafetyLensQrViewerLayout`).
+6. Toque no item ativo **seleciona** (RF03); **Confirmar item** conclui o passo. No QR, arraste gira os models.
+7. Após HOT → PINCH → EPI, segue quiz, telemetria (se habilitada) e exportação (RF06).
 
 ### 11.3 Elementos virtuais
 
@@ -310,7 +314,8 @@ SafetyLens/
 | `SafetyLensSessionClock.cs`            | Relógios RF04 (elapsed / inspeção / quiz), testável |
 | `SafetyLensStageTimeline.cs`           | Instantes das etapas (relativos ao 1º tracking) |
 | `SafetyLensArTrackingService.cs`       | Image Tracking, graça P1-6, câmera sob demanda |
-| `SafetyLensArContentService.cs`        | Overlays 3D, UV, pick RF03 |
+| `SafetyLensArContentService.cs`        | Overlays 3D, UV, pick RF03 + viewer QR |
+| `SafetyLensQrViewerLayout.cs`          | Posições dos models no viewer QR (fora do código) |
 | `SafetyLensTelemetry.cs`               | RF12: amostra por tempo da fase + status por limiares (domínio puro) |
 | `SafetyLensTelemetrySession.cs`        | Estado da fase RF12 (não altera relógios de pesquisa) |
 | `SafetyLensScenarioLoader.cs`          | Load + validação do JSON de cenário |
@@ -408,9 +413,9 @@ cd ODS-Vision-SafetyLens
 8. Veja o resultado; exporte/compartilhe CSV se necessário.
 9. Use **Histórico** para sessões anteriores.
 
-### Screenshots da interface (versão 1)
+### Screenshots da interface (versão 2 — atual)
 
-Pasta: [`docs/images/v1/interface/`](docs/images/v1/interface/)
+Pasta: [`docs/images/v2/interface/`](docs/images/v2/interface/) · nomes em [`v2/interface/README.md`](docs/images/v2/interface/README.md)
 
 | # | Tela | Arquivo | Finalidade |
 |---|---|---|---|
@@ -418,29 +423,21 @@ Pasta: [`docs/images/v1/interface/`](docs/images/v1/interface/)
 | 02 | Histórico | `02-tela-historico.PNG` | Ver sessões anteriores |
 | 03 | Câmera aberta | `03-tela-camera-aberta.PNG` | Scanning do marcador |
 | 03b | Apontada à imagem | `03b-tela-apontada-imagem.PNG` | Marcador reconhecido |
-| 04 | Zona quente | `04-tela-confirmado-zona-quente.PNG` | Confirmar HOT |
-| 05 | Ponto de pinçamento | `05-tela-ponto-pincamento.PNG` | Item PINCH ativo |
-| 06 | Confirmando pinçamento | `06-tela-confirmando-pincamento.PNG` | Confirmar PINCH |
-| 07 | Capacete / EPI | `07-tela-capacete.PNG` | Item EPI |
-| 08 | Quiz 1 | `08-quiz-pergunta1.PNG` | Fixação — pergunta 1 |
-| 09 | Quiz 2 | `09-quiz-pergunta2.PNG` | Fixação — pergunta 2 |
-| 10 | Quiz 3 | `10-quiz-pergunta3.PNG` | Fixação — pergunta 3 |
-| 11 | Final | `11-tela-final.PNG` | Resultado e métricas |
-| 12 | Compartilhar | `12-tela-compartilhando.PNG` | Share sheet do CSV |
+| 04 | Ficha do equipamento | `04-tela-ficha-equipamento.PNG` | Equipment Brief (CTA com tracking estável) |
+| 05 | Zona quente | `05-tela-confirmado-zona-quente.PNG` | Confirmar HOT |
+| 06 | Ponto de pinçamento | `06-tela-ponto-pincamento.PNG` | Item PINCH ativo |
+| 07 | Confirmando pinçamento | `07-tela-confirmando-pincamento.PNG` | Confirmar PINCH |
+| 08 | Capacete / EPI | `08-tela-capacete.PNG` | Item EPI |
+| 09 | Quiz 1 | `09-quiz-pergunta1.PNG` | Fixação — pergunta 1 |
+| 10 | Quiz 2 | `10-quiz-pergunta2.PNG` | Fixação — pergunta 2 |
+| 11 | Quiz 3 | `11-quiz-pergunta3.PNG` | Fixação — pergunta 3 |
+| 12 | Telemetria Ideal | `12-tela-telemetria-ideal.PNG` | RF12 — Ideal |
+| 12b | Telemetria Cuidado | `12b-tela-telemetria-cuidado.PNG` | RF12 — Cuidado |
+| 12c | Telemetria Perigoso | `12c-tela-telemetria-perigoso.PNG` | RF12 — Perigoso |
+| 13 | Final | `13-tela-final.PNG` | Resultado e métricas |
+| 14 | Compartilhar | `14-tela-compartilhando.PNG` | Share sheet do CSV |
 
-![01 — Tela inicial](docs/images/v1/interface/01-tela-inicial.PNG)
-![02 — Histórico](docs/images/v1/interface/02-tela-historico.PNG)
-![03 — Câmera aberta](docs/images/v1/interface/03-tela-camera-aberta.PNG)
-![03b — Apontada à imagem](docs/images/v1/interface/03b-tela-apontada-imagem.PNG)
-![04 — Zona quente confirmada](docs/images/v1/interface/04-tela-confirmado-zona-quente.PNG)
-![05 — Ponto de pinçamento](docs/images/v1/interface/05-tela-ponto-pincamento.PNG)
-![06 — Confirmando pinçamento](docs/images/v1/interface/06-tela-confirmando-pincamento.PNG)
-![07 — Capacete / EPI](docs/images/v1/interface/07-tela-capacete.PNG)
-![08 — Quiz pergunta 1](docs/images/v1/interface/08-quiz-pergunta1.PNG)
-![09 — Quiz pergunta 2](docs/images/v1/interface/09-quiz-pergunta2.PNG)
-![10 — Quiz pergunta 3](docs/images/v1/interface/10-quiz-pergunta3.PNG)
-![11 — Tela final](docs/images/v1/interface/11-tela-final.PNG)
-![12 — Compartilhando CSV](docs/images/v1/interface/12-tela-compartilhando.PNG)
+Galeria da **versão 1** (histórico): [`docs/images/v1/interface/`](docs/images/v1/interface/).
 
 ---
 
@@ -501,36 +498,26 @@ Finished (resultado / share)
 
 ## 21. Interface
 
-Capturas da **versão 1** (ordem do fluxo):
+Capturas da **versão 2 — atual** (ficha + RF12) e histórico da v1:
 
 ```text
 docs/images/
 ├── marcador-wl03-equipment-target.png   ← Image Target principal (~20 cm)
 ├── marcador-qr-target.png               ← Image Target alternativo (~12 cm)
-└── v1/
-    ├── interface/                    ← screenshots (01…12) ✅
-    │   ├── 01-tela-inicial.PNG
-    │   ├── 02-tela-historico.PNG
-    │   ├── 03-tela-camera-aberta.PNG
-    │   ├── 03b-tela-apontada-imagem.PNG
-    │   ├── 04-tela-confirmado-zona-quente.PNG
-    │   ├── 05-tela-ponto-pincamento.PNG
-    │   ├── 06-tela-confirmando-pincamento.PNG
-    │   ├── 07-tela-capacete.PNG
-    │   ├── 08-quiz-pergunta1.PNG
-    │   ├── 09-quiz-pergunta2.PNG
-    │   ├── 10-quiz-pergunta3.PNG
-    │   ├── 11-tela-final.PNG
-    │   └── 12-tela-compartilhando.PNG
-    └── evidencias/
-        └── Video_V1.mov              ← demonstração local ✅
+├── v1/
+│   ├── interface/                    ← screenshots v1 (01…12) ✅
+│   └── evidencias/
+│       └── Video_V1.mov              ← demonstração v1 ✅
+└── v2/
+    ├── interface/                    ← screenshots v2 (01…14) ⬜
+    └── evidencias/                   ← Video_V2.mov / fotos ⬜
 ```
 
-**Demonstração em vídeo (versão 1):**
-- YouTube: [Shorts](https://youtube.com/shorts/QbRCsMurnhY)
-- No repositório: [`docs/images/v1/evidencias/Video_V1.mov`](docs/images/v1/evidencias/Video_V1.mov)
+**Demonstração em vídeo:**
+- v1 — YouTube: [Shorts](https://youtube.com/shorts/QbRCsMurnhY) · [`Video_V1.mov`](docs/images/v1/evidencias/Video_V1.mov)
+- v2 — pasta [`docs/images/v2/evidencias/`](docs/images/v2/evidencias/) (pendente)
 
-Galeria completa na seção [17. Como Utilizar](#17-como-utilizar-a-aplicação). Detalhes: [`docs/images/v1/interface/README.md`](docs/images/v1/interface/README.md).
+Ordem das telas v2: [`docs/images/v2/interface/README.md`](docs/images/v2/interface/README.md). Galeria na seção [17. Como Utilizar](#17-como-utilizar-a-aplicação).
 
 ---
 
@@ -583,8 +570,11 @@ Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-po
 
 | Evidência               | Onde colocar / link                                                                                  |
 | ----------------------- | ---------------------------------------------------------------------------------------------------- |
-| Screenshots das telas   | [`docs/images/v1/interface/`](docs/images/v1/interface/) (01–12) ✅                                   |
-| Evidência no iPhone     | `docs/images/v1/evidencias/` _(foto local opcional)_                                                 |
+| Screenshots v2 Marcador | [`docs/images/v2/interface/Marcador/`](docs/images/v2/interface/Marcador/) (folha impressa) ✅        |
+| Screenshots v2 QR       | `docs/images/v2/interface/QR/` ⬜                                                                   |
+| Tabela CSV v2 (sessão)  | [`docs/images/v2/evidencias/`](docs/images/v2/evidencias/) · [tabela](docs/images/v2/evidencias/README.md) ✅ |
+| Evidência v2 no iPhone  | [`docs/images/v2/evidencias/`](docs/images/v2/evidencias/) _(vídeo/fotos)_ ⬜                         |
+| Screenshots v1          | [`docs/images/v1/interface/`](docs/images/v1/interface/) (01–12) ✅                                   |
 | Vídeo demonstrativo (v1)| [YouTube Shorts](https://youtube.com/shorts/QbRCsMurnhY) · [`Video_V1.mov`](docs/images/v1/evidencias/Video_V1.mov) ✅ |
 | Artigo científico       | [SharePoint (Word — versão atualizada)](https://facens-my.sharepoint.com/:w:/g/personal/223969_facens_br/IQC635MrvwTJQr-ThWC7yNzgAfASb7rOqj2sZgzheg6sdYE?e=UEWZgv) |
 | SUS Dia 0 (Forms)       | [Usabilidade (SUS)](https://docs.google.com/forms/d/e/1FAIpQLScPRBjHCm_0_71R-zh___C8pVwI2r2aRMy5DMoN1E-1upNS9A/viewform?usp=sharing) ✅ |
@@ -732,6 +722,8 @@ Uso e redistribuição devem respeitar as políticas da instituição e crédito
 - [x] Procedimento de execução (iOS)
 - [x] Procedimento de utilização
 - [x] Screenshots da v1 em `docs/images/v1/interface/` (fluxo 01–12)
+- [ ] Screenshots da v2 em `docs/images/v2/interface/` (fluxo 01–14, ficha + RF12)
+- [ ] Evidência em vídeo da v2 em `docs/images/v2/evidencias/`
 - [x] Testes registrados (parcial; Android pendente)
 - [x] Dispositivos testados informados (iPhone 12 + MacBook M2)
 - [x] Limitações conhecidas documentadas

@@ -1,5 +1,15 @@
 # Changelog — SafetyLens
 
+## 1.4.2
+
+Dois caminhos de RA (marcador WL03 intacto; QR redesenhado):
+
+- **WL03:** overlays continuam ancorados no Image Target (fluxo atual)
+- **QR (tela):** na ficha os models **não** aparecem em cima do código; ao iniciar a inspeção abre um viewer
+- No viewer QR: **fundo sólido** (sem feed da câmera); models menores; arraste para girar e toque no item (RF03)
+- Telemetria QR: tela com **tabela** Ideal/Cuidado/Perigoso (sem câmera nem valores ao vivo). Marcador WL03 inalterado
+- Layout puro em `SafetyLensQrViewerLayout` + testes EditMode
+
 ## 1.4.1
 
 - RF10: SUS e retenção 7 dias definidos como **protocolo externo** (Google Forms), não módulo no app
