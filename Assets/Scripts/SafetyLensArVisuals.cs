@@ -39,7 +39,7 @@ namespace Facens.SafetyLens
 
     /// <summary>
     /// Fábrica dos visuais de RA. Posição vem das UVs A/B/C no marcador; orientação billboard
-    /// fica a cargo do SessionController. Materiais em Resources.
+    /// fica a cargo do <see cref="SafetyLensArContentService"/>. Materiais em Resources.
     /// </summary>
     public static class SafetyLensArVisuals
     {
