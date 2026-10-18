@@ -3,6 +3,16 @@
   "title": "Identificação de Riscos Industriais",
   "targetName": "SafetyLensEquipmentTarget",
   "intro": "Aponte a câmera para o marcador no equipamento. Toque nas zonas de risco e nos EPIs destacados na ordem indicada. Em seguida responda o quiz.",
+  "equipment": {
+    "name": "Compressor industrial demo",
+    "function": "Gera ar comprimido para a linha de produção.",
+    "summary": "Antes de operar, identifique zonas quentes, pontos de pinçamento e o EPI obrigatório.",
+    "riskHighlights": [
+      "Superfície quente — risco de queimadura",
+      "Ponto de pinçamento mecânico",
+      "Capacete obrigatório na área"
+    ]
+  },
   "hazards": [
     {
       "id": "HOT",
@@ -82,5 +92,27 @@
       ],
       "correctIndex": 1
     }
-  ]
+  ],
+  "telemetry": {
+    "enabled": true,
+    "equipmentName": "Equipamento demo",
+    "thresholds": {
+      "temperatureWarning": 50.0,
+      "temperatureCritical": 70.0,
+      "pressureWarning": 2.8,
+      "pressureCritical": 3.2,
+      "rpmWarning": 1600.0,
+      "rpmCritical": 1800.0
+    },
+    "samples": [
+      { "atSeconds": 0, "temperature": 42.3, "pressure": 2.4, "rpm": 1450 },
+      { "atSeconds": 8, "temperature": 58.2, "pressure": 2.9, "rpm": 1660 },
+      { "atSeconds": 16, "temperature": 72.8, "pressure": 3.35, "rpm": 1840 }
+    ],
+    "statusCopy": {
+      "normal": "Ideal — operação na faixa segura.",
+      "warning": "Cuidado — valores elevados; reduza a carga e monitore.",
+      "critical": "Perigoso — risco imediato; interrompa e acione o procedimento."
+    }
+  }
 }

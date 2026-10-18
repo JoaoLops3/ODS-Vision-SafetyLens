@@ -36,8 +36,10 @@ namespace Facens.SafetyLens
         public bool IsHazardDone(int index) =>
             index >= 0 && index < _hazardDone.Length && _hazardDone[index];
 
+        /// <summary>Incrementa o núcleo de erros da pesquisa (toque errado ou quiz errado).</summary>
         public void RegisterError() => ErrorCount++;
 
+        /// <summary>Marca o item ativo como selecionado via toque AR. False se já estava selecionado.</summary>
         public bool SelectCurrentHazardFromAr()
         {
             if (CurrentHazardArSelected) return false;
@@ -45,6 +47,7 @@ namespace Facens.SafetyLens
             return true;
         }
 
+        /// <summary>Zera a seleção AR (toque no item errado ou marcador perdido).</summary>
         public void ClearArSelection() => CurrentHazardArSelected = false;
 
         /// <summary>Confirma o hazard ativo. Retorna true se a inspeção terminou (ir ao quiz).</summary>
@@ -97,6 +100,7 @@ namespace Facens.SafetyLens
             return false;
         }
 
+        /// <summary>Monta o registro de export. Tempos e FPS vêm do facade; erros vêm daqui.</summary>
         public SafetyLensSessionRecord BuildRecord(
             string participantId,
             SafetyLensScenario scenario,
@@ -106,7 +110,16 @@ namespace Facens.SafetyLens
             SafetyLensPerformanceSummary performance,
             string markerName,
             string startedAtIso,
-            string finishedAtIso)
+            string finishedAtIso,
+            string telemetryStatus = null,
+            float temperature = 0f,
+            float pressure = 0f,
+            float rpm = 0f,
+            float briefSeconds = 0f,
+            float inspectionEndedAtSeconds = 0f,
+            float quizEndedAtSeconds = 0f,
+            float telemetryEndedAtSeconds = 0f,
+            float finishedAtSeconds = 0f)
         {
             return new SafetyLensSessionRecord
             {
@@ -128,7 +141,16 @@ namespace Facens.SafetyLens
                 quizAnswers = _quizAnswers.ToArray(),
                 markerName = markerName,
                 startedAtIso = startedAtIso,
-                finishedAtIso = finishedAtIso
+                finishedAtIso = finishedAtIso,
+                telemetryStatus = telemetryStatus ?? string.Empty,
+                temperature = temperature,
+                pressure = pressure,
+                rpm = rpm,
+                briefSeconds = briefSeconds,
+                inspectionEndedAtSeconds = inspectionEndedAtSeconds,
+                quizEndedAtSeconds = quizEndedAtSeconds,
+                telemetryEndedAtSeconds = telemetryEndedAtSeconds,
+                finishedAtSeconds = finishedAtSeconds
             };
         }
     }

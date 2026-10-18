@@ -28,6 +28,10 @@ namespace Facens.SafetyLens
         public static string LastJsonPath { get; private set; } = string.Empty;
         public static string LastCsvPath { get; private set; } = string.Empty;
 
+        /// <summary>
+        /// Grava o par JSON/CSV em persistentDataPath. Falhas de disco sobem como
+        /// <see cref="IOException"/> ou <see cref="UnauthorizedAccessException"/> com o caminho.
+        /// </summary>
         public static void Export(SafetyLensSessionRecord record)
         {
             if (record == null) throw new ArgumentNullException(nameof(record));
@@ -35,7 +39,14 @@ namespace Facens.SafetyLens
             var stamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
             var safeId = SanitizeFilePart(record.participantId);
             var dir = Application.persistentDataPath;
-            Directory.CreateDirectory(dir);
+            try
+            {
+                Directory.CreateDirectory(dir);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                throw new IOException($"Nao foi possivel criar o diretorio de export: {dir}", ex);
+            }
 
             record.exportedAtIso = DateTime.UtcNow.ToString("o");
 
@@ -43,8 +54,17 @@ namespace Facens.SafetyLens
             LastCsvPath = Path.Combine(dir, $"{FilePrefix}{safeId}_{stamp}.csv");
             LastExportDirectory = dir;
 
-            File.WriteAllText(LastJsonPath, JsonUtility.ToJson(record, true), Encoding.UTF8);
-            File.WriteAllText(LastCsvPath, BuildCsv(new[] { record }), Encoding.UTF8);
+            try
+            {
+                File.WriteAllText(LastJsonPath, JsonUtility.ToJson(record, true), Encoding.UTF8);
+                File.WriteAllText(LastCsvPath, BuildCsv(new[] { record }), Encoding.UTF8);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                throw new IOException(
+                    $"Falha ao gravar JSON/CSV offline.\nJSON: {LastJsonPath}\nCSV: {LastCsvPath}",
+                    ex);
+            }
 
             Debug.Log($"[SafetyLens] Sessão exportada.\nJSON: {LastJsonPath}\nCSV: {LastCsvPath}");
         }
@@ -115,7 +135,15 @@ namespace Facens.SafetyLens
             var path = Path.Combine(
                 Application.persistentDataPath,
                 $"{FilePrefix}todas_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv");
-            File.WriteAllText(path, BuildCsv(records), Encoding.UTF8);
+            try
+            {
+                File.WriteAllText(path, BuildCsv(records), Encoding.UTF8);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                throw new IOException($"Falha ao gravar o CSV agregado: {path}", ex);
+            }
+
             return path;
         }
 
@@ -169,7 +197,7 @@ namespace Facens.SafetyLens
             var sb = new StringBuilder();
             // Colunas novas sempre no fim: CSVs antigos continuam legíveis pelas mesmas posições.
             sb.AppendLine(
-                "participantId,scenarioId,scenarioTitle,elapsedSeconds,errorCount,hazardsConfirmed,hazardsTotal,quizCorrect,quizTotal,quizAnswers,startedAtIso,finishedAtIso,exportedAtIso,inspectionSeconds,quizSeconds,fpsAverage,fpsLow1Percent,framesBelow30Ratio,peakMemoryMb,markerName");
+                "participantId,scenarioId,scenarioTitle,elapsedSeconds,errorCount,hazardsConfirmed,hazardsTotal,quizCorrect,quizTotal,quizAnswers,startedAtIso,finishedAtIso,exportedAtIso,inspectionSeconds,quizSeconds,fpsAverage,fpsLow1Percent,framesBelow30Ratio,peakMemoryMb,markerName,telemetryStatus,temperature,pressure,rpm,briefSeconds,inspectionEndedAtSeconds,quizEndedAtSeconds,telemetryEndedAtSeconds,finishedAtSeconds");
             foreach (var record in records)
             {
                 if (record == null) continue;
@@ -194,7 +222,16 @@ namespace Facens.SafetyLens
                     .Append(record.fpsLow1Percent.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
                     .Append(record.framesBelow30Ratio.ToString("F4", CultureInfo.InvariantCulture)).Append(',')
                     .Append(record.peakMemoryMb.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
-                    .Append(Escape(record.markerName))
+                    .Append(Escape(record.markerName)).Append(',')
+                    .Append(Escape(record.telemetryStatus)).Append(',')
+                    .Append(record.temperature.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.pressure.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.rpm.ToString("F0", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.briefSeconds.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.inspectionEndedAtSeconds.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.quizEndedAtSeconds.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.telemetryEndedAtSeconds.ToString("F2", CultureInfo.InvariantCulture)).Append(',')
+                    .Append(record.finishedAtSeconds.ToString("F2", CultureInfo.InvariantCulture))
                     .AppendLine();
             }
             return sb.ToString();

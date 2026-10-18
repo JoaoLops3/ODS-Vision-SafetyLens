@@ -26,6 +26,13 @@ namespace Facens.SafetyLens.Tests
                         correctIndex = 1
                     }
                 },
+                equipment = new SafetyLensEquipment
+                {
+                    name = "Compressor demo",
+                    function = "Gera ar comprimido.",
+                    summary = "Identifique os riscos antes de operar.",
+                    riskHighlights = new[] { "Superfície quente", "Capacete obrigatório" }
+                },
                 altTargets = new[]
                 {
                     new SafetyLensTargetLayout
@@ -46,6 +53,15 @@ namespace Facens.SafetyLens.Tests
         {
             var errors = SafetyLensScenarioValidator.Validate(ValidScenario(), "SafetyLensEquipmentTarget");
             Assert.AreEqual(0, errors.Count, string.Join("; ", errors));
+        }
+
+        [Test]
+        public void Validator_RejectsMissingEquipment()
+        {
+            var s = ValidScenario();
+            s.equipment = null;
+            var errors = SafetyLensScenarioValidator.Validate(s, "SafetyLensEquipmentTarget");
+            Assert.IsTrue(errors.Exists(e => e.Contains("equipment")), string.Join("; ", errors));
         }
 
         [Test]
@@ -207,6 +223,34 @@ namespace Facens.SafetyLens.Tests
             Assert.AreEqual(0.01f, record.framesBelow30Ratio, 1e-5f);
             Assert.AreEqual(512.5f, record.peakMemoryMb, 1e-5f);
             Assert.AreEqual("SafetyLensQrTarget", record.markerName);
+            Assert.AreEqual(0f, record.telemetryEndedAtSeconds);
+        }
+
+        [Test]
+        public void BuildRecord_WritesStageTimings_AndZeroTelemetryWhenOmitted()
+        {
+            var p = new SafetyLensInspectionProgress(1);
+            var record = p.BuildRecord(
+                "P04",
+                ValidScenario(),
+                elapsedSeconds: 30f,
+                inspectionSeconds: 20f,
+                quizSeconds: 10f,
+                performance: default,
+                markerName: "SafetyLensEquipmentTarget",
+                startedAtIso: "a",
+                finishedAtIso: "b",
+                briefSeconds: 4.5f,
+                inspectionEndedAtSeconds: 20f,
+                quizEndedAtSeconds: 30f,
+                telemetryEndedAtSeconds: 0f,
+                finishedAtSeconds: 30.2f);
+
+            Assert.AreEqual(4.5f, record.briefSeconds, 1e-5f);
+            Assert.AreEqual(20f, record.inspectionEndedAtSeconds, 1e-5f);
+            Assert.AreEqual(30f, record.quizEndedAtSeconds, 1e-5f);
+            Assert.AreEqual(0f, record.telemetryEndedAtSeconds);
+            Assert.AreEqual(30.2f, record.finishedAtSeconds, 1e-5f);
         }
 
         [Test]

@@ -122,7 +122,7 @@ namespace Facens.SafetyLens.Editor
                 }
             }
 
-            var scenario = Resources.Load<TextAsset>("safetylens_scenario");
+            var scenario = Resources.Load<TextAsset>(SafetyLensAppConstants.ScenarioResourceName);
             if (scenario == null)
             {
                 Debug.LogError("[SafetyLens] Resources/safetylens_scenario.json ausente.");
@@ -197,12 +197,18 @@ namespace Facens.SafetyLens.Editor
 
             if (errors == 0)
             {
-                Debug.Log(
-                    "[SafetyLens] VALIDACAO OK: cena + library + cenario UV; " +
-                    "Android=ARCore; iOS=ARKit+Required+Metal+camera privacy.");
+                const string ok =
+                    "VALIDACAO OK: cena + library + cenario UV; " +
+                    "Android=ARCore; iOS=ARKit+Required+Metal+camera privacy.";
+                Debug.Log($"[SafetyLens] {ok}");
+                EditorUtility.DisplayDialog("SafetyLens", ok, "OK");
             }
             else
-                Debug.LogError($"[SafetyLens] VALIDACAO FALHOU: {errors} problema(s).");
+            {
+                var fail = $"VALIDACAO FALHOU: {errors} problema(s). Veja o Console.";
+                Debug.LogError($"[SafetyLens] {fail}");
+                EditorUtility.DisplayDialog("SafetyLens", fail, "OK");
+            }
         }
 
         static int RequireObject<T>(string label) where T : UnityEngine.Object
@@ -395,6 +401,9 @@ namespace Facens.SafetyLens.Editor
         public static void BuildIos()
         {
             ConfigureProject();
+            // AR Foundation deixa cópias em Assets/XR/Temp no meio do build; se a pasta
+            // não estiver vazia, o próximo BuildPlayer falha com "Directory not empty".
+            CleanXrSimulationTemp();
             if (!EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.iOS, BuildTarget.iOS))
                 throw new InvalidOperationException("Nao foi possivel selecionar iOS.");
 
@@ -409,10 +418,39 @@ namespace Facens.SafetyLens.Editor
             };
 
             var report = BuildPipeline.BuildPlayer(options);
+            CleanXrSimulationTemp();
             if (report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
                 throw new InvalidOperationException($"Build iOS falhou: {report.summary.result}");
 
             Debug.Log("[SafetyLens] Projeto Xcode gerado em Builds/. Abra Unity-iPhone.xcodeproj e rode no iPhone.");
+        }
+
+        /// <summary>
+        /// Remove leftovers do pipeline XR Simulation (só Editor). Não afeta ARKit/ARCore no device.
+        /// </summary>
+        static void CleanXrSimulationTemp()
+        {
+            const string tempFolder = "Assets/XR/Temp";
+            if (!AssetDatabase.IsValidFolder(tempFolder) && !Directory.Exists(tempFolder))
+                return;
+
+            if (Directory.Exists(tempFolder))
+            {
+                foreach (var path in Directory.GetFiles(tempFolder))
+                {
+                    try { File.Delete(path); }
+                    catch (IOException ex) { Debug.LogWarning($"[SafetyLens] Nao removido {path}: {ex.Message}"); }
+                }
+
+                foreach (var path in Directory.GetDirectories(tempFolder))
+                {
+                    try { Directory.Delete(path, true); }
+                    catch (IOException ex) { Debug.LogWarning($"[SafetyLens] Nao removido {path}: {ex.Message}"); }
+                }
+            }
+
+            AssetDatabase.Refresh();
+            Debug.Log("[SafetyLens] Assets/XR/Temp limpa antes/depois do build.");
         }
 
         static void ConfigureAndroid()

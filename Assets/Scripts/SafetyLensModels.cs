@@ -7,8 +7,12 @@ namespace Facens.SafetyLens
     {
         Identification,
         Scanning,
+        /// <summary>Ficha do equipamento após o primeiro tracking; o relógio RF04 já corre.</summary>
+        EquipmentBrief,
         RiskInspection,
         Quiz,
+        /// <summary>RF12: leitura simulada do equipamento (WL05), depois do quiz.</summary>
+        Telemetry,
         Finished,
         History
     }
@@ -24,6 +28,10 @@ namespace Facens.SafetyLens
         public SafetyLensQuizQuestion[] quiz;
         /// <summary>Image Targets alternativos (ex.: QR Code) com UVs próprios por hazard.</summary>
         public SafetyLensTargetLayout[] altTargets;
+        /// <summary>Ficha do equipamento (nome, função, destaques de risco). Obrigatória no schema.</summary>
+        public SafetyLensEquipment equipment;
+        /// <summary>RF12: roteiro e limiares da leitura simulada. Ausente ou enabled=false pula a fase.</summary>
+        public SafetyLensTelemetryConfig telemetry;
 
         /// <summary>True se o nome é o alvo principal ou um dos alternativos.</summary>
         public bool IsKnownTarget(string name)
@@ -63,6 +71,16 @@ namespace Facens.SafetyLens
 
             return new Vector2(hazard.u, hazard.v);
         }
+    }
+
+    /// <summary>Contexto do equipamento ancorado no marcador — painel da fase EquipmentBrief.</summary>
+    [Serializable]
+    public sealed class SafetyLensEquipment
+    {
+        public string name;
+        public string function;
+        public string summary;
+        public string[] riskHighlights;
     }
 
     /// <summary>Layout de um Image Target alternativo: onde cada hazard ancora naquele marcador.</summary>
@@ -163,7 +181,7 @@ namespace Facens.SafetyLens
         public string scenarioId;
         public string scenarioTitle;
         public float elapsedSeconds;
-        /// <summary>RF04: do reconhecimento do marcador à confirmação do último risco.</summary>
+        /// <summary>RF04: do reconhecimento do marcador à confirmação do último risco (inclui a leitura da ficha).</summary>
         public float inspectionSeconds;
         /// <summary>RF04: da primeira pergunta à última resposta do quiz.</summary>
         public float quizSeconds;
@@ -186,6 +204,24 @@ namespace Facens.SafetyLens
         public string startedAtIso;
         public string finishedAtIso;
         public string exportedAtIso;
+        /// <summary>RF12: status da leitura no momento de concluir (NORMAL/ATENCAO/CRITICO). Vazio se a fase não rodou.</summary>
+        public string telemetryStatus;
+        /// <summary>RF12: temperatura (°C) no momento de concluir. Zero se a fase não rodou.</summary>
+        public float temperature;
+        /// <summary>RF12: pressão (bar) no momento de concluir. Zero se a fase não rodou.</summary>
+        public float pressure;
+        /// <summary>RF12: RPM no momento de concluir. Zero se a fase não rodou.</summary>
+        public float rpm;
+        /// <summary>Segundos do 1º tracking até Continuar na ficha. 0 se a ficha não concluiu.</summary>
+        public float briefSeconds;
+        /// <summary>Segundos do 1º tracking até o último hazard confirmado.</summary>
+        public float inspectionEndedAtSeconds;
+        /// <summary>Segundos do 1º tracking até a última resposta do quiz.</summary>
+        public float quizEndedAtSeconds;
+        /// <summary>Segundos do 1º tracking até Concluir telemetria. 0 se RF12 não rodou.</summary>
+        public float telemetryEndedAtSeconds;
+        /// <summary>Segundos do 1º tracking até o export (Finished).</summary>
+        public float finishedAtSeconds;
     }
 
     public sealed class SafetyLensHazardTag : MonoBehaviour

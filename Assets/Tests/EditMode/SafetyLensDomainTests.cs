@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Threading;
 using NUnit.Framework;
@@ -140,11 +141,84 @@ namespace Facens.SafetyLens.Tests
             var csv = SafetyLensSessionStore.BuildCsv(new[] { record });
 
             StringAssert.StartsWith(
-                "participantId,scenarioId,scenarioTitle,elapsedSeconds,errorCount,hazardsConfirmed,hazardsTotal,quizCorrect,quizTotal,quizAnswers,startedAtIso,finishedAtIso,exportedAtIso,inspectionSeconds,quizSeconds,fpsAverage,fpsLow1Percent,framesBelow30Ratio,peakMemoryMb,markerName",
+                "participantId,scenarioId,scenarioTitle,elapsedSeconds,errorCount,hazardsConfirmed,hazardsTotal,quizCorrect,quizTotal,quizAnswers,startedAtIso,finishedAtIso,exportedAtIso,inspectionSeconds,quizSeconds,fpsAverage,fpsLow1Percent,framesBelow30Ratio,peakMemoryMb,markerName,telemetryStatus,temperature,pressure,rpm,briefSeconds,inspectionEndedAtSeconds,quizEndedAtSeconds,telemetryEndedAtSeconds,finishedAtSeconds",
                 csv);
             Assert.IsTrue(csv.Contains("\"A,B\""), csv);
             Assert.IsTrue(csv.Contains("\"diz \"\"oi\"\"\""), csv);
             Assert.IsTrue(csv.Contains("Q1:a:OK|Q2:b:ERR"), csv);
+        }
+
+        [Test]
+        public void BuildCsv_AppendsTelemetryColumns_WithoutShiftingOldOnes()
+        {
+            var withTelemetry = new SafetyLensSessionRecord
+            {
+                participantId = "P01",
+                markerName = "SafetyLensEquipmentTarget",
+                telemetryStatus = "ATENCAO",
+                temperature = 58.2f,
+                pressure = 2.9f,
+                rpm = 1660f,
+                elapsedSeconds = 10f
+            };
+            var without = new SafetyLensSessionRecord
+            {
+                participantId = "P02",
+                markerName = "SafetyLensQrTarget",
+                elapsedSeconds = 8f
+            };
+
+            var csv = SafetyLensSessionStore.BuildCsv(new[] { withTelemetry, without });
+            var lines = csv.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            Assert.AreEqual(3, lines.Length);
+
+            var headerCols = lines[0].TrimEnd('\r').Split(',');
+            Assert.AreEqual("markerName", headerCols[19]);
+            Assert.AreEqual("telemetryStatus", headerCols[20]);
+            Assert.AreEqual("temperature", headerCols[21]);
+            Assert.AreEqual("pressure", headerCols[22]);
+            Assert.AreEqual("rpm", headerCols[23]);
+            Assert.AreEqual("briefSeconds", headerCols[24]);
+            Assert.AreEqual("inspectionEndedAtSeconds", headerCols[25]);
+            Assert.AreEqual("quizEndedAtSeconds", headerCols[26]);
+            Assert.AreEqual("telemetryEndedAtSeconds", headerCols[27]);
+            Assert.AreEqual("finishedAtSeconds", headerCols[28]);
+
+            Assert.IsTrue(lines[1].Contains("ATENCAO"), lines[1]);
+            Assert.IsTrue(lines[1].Contains("58.20"), lines[1]);
+            Assert.IsTrue(lines[1].Contains("2.90"), lines[1]);
+            Assert.IsTrue(lines[1].Contains("1660"), lines[1]);
+
+            var emptyCols = lines[2].TrimEnd('\r').Split(',');
+            Assert.AreEqual("SafetyLensQrTarget", emptyCols[19]);
+            Assert.AreEqual(string.Empty, emptyCols[20]);
+            Assert.AreEqual("0.00", emptyCols[21]);
+            Assert.AreEqual("0.00", emptyCols[22]);
+            Assert.AreEqual("0", emptyCols[23]);
+            Assert.AreEqual("0.00", emptyCols[24]);
+            Assert.AreEqual("0.00", emptyCols[27]);
+        }
+
+        [Test]
+        public void BuildCsv_TelemetryEndedAtSeconds_IsZeroWhenRf12DidNotRun()
+        {
+            var record = new SafetyLensSessionRecord
+            {
+                participantId = "P03",
+                briefSeconds = 4.5f,
+                inspectionEndedAtSeconds = 20f,
+                quizEndedAtSeconds = 28f,
+                telemetryEndedAtSeconds = 0f,
+                finishedAtSeconds = 28.2f
+            };
+            var csv = SafetyLensSessionStore.BuildCsv(new[] { record });
+            var cols = csv.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)[1]
+                .TrimEnd('\r').Split(',');
+            Assert.AreEqual("4.50", cols[24]);
+            Assert.AreEqual("20.00", cols[25]);
+            Assert.AreEqual("28.00", cols[26]);
+            Assert.AreEqual("0.00", cols[27]);
+            Assert.AreEqual("28.20", cols[28]);
         }
 
         [Test]

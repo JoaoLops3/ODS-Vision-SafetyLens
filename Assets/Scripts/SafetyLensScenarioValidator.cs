@@ -46,7 +46,112 @@ namespace Facens.SafetyLens
             if (scenario.altTargets != null && scenario.altTargets.Length > 0)
                 ValidateAltTargets(scenario, errors);
 
+            ValidateEquipment(scenario.equipment, errors);
+            ValidateTelemetry(scenario.telemetry, errors);
+
             return errors;
+        }
+
+        /// <summary>Ficha obrigatória: nome, função, resumo e pelo menos um destaque de risco.</summary>
+        static void ValidateEquipment(SafetyLensEquipment equipment, List<string> errors)
+        {
+            if (equipment == null)
+            {
+                errors.Add("equipment ausente (ficha do equipamento).");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(equipment.name))
+                errors.Add("equipment.name vazio.");
+            if (string.IsNullOrWhiteSpace(equipment.function))
+                errors.Add("equipment.function vazio.");
+            if (string.IsNullOrWhiteSpace(equipment.summary))
+                errors.Add("equipment.summary vazio.");
+
+            if (equipment.riskHighlights == null || equipment.riskHighlights.Length == 0)
+            {
+                errors.Add("equipment.riskHighlights vazio.");
+                return;
+            }
+
+            if (equipment.riskHighlights.Length > 4)
+                errors.Add("equipment.riskHighlights: no máximo 4 destaques.");
+
+            for (var i = 0; i < equipment.riskHighlights.Length; i++)
+            {
+                if (string.IsNullOrWhiteSpace(equipment.riskHighlights[i]))
+                    errors.Add($"equipment.riskHighlights[{i}] vazio.");
+            }
+        }
+
+        /// <summary>
+        /// RF12: com enabled=false (ou bloco nulo) não exige o restante.
+        /// Com enabled=true: amostra em t=0, tempos crescentes, críticos &gt; atenção.
+        /// </summary>
+        static void ValidateTelemetry(SafetyLensTelemetryConfig telemetry, List<string> errors)
+        {
+            if (telemetry == null || !telemetry.enabled) return;
+
+            if (string.IsNullOrWhiteSpace(telemetry.equipmentName))
+                errors.Add("telemetry.equipmentName vazio.");
+
+            var thresholds = telemetry.thresholds;
+            if (thresholds == null)
+            {
+                errors.Add("telemetry.thresholds ausente.");
+            }
+            else
+            {
+                if (thresholds.temperatureCritical <= thresholds.temperatureWarning)
+                    errors.Add("telemetry: temperatureCritical deve ser maior que temperatureWarning.");
+                if (thresholds.pressureCritical <= thresholds.pressureWarning)
+                    errors.Add("telemetry: pressureCritical deve ser maior que pressureWarning.");
+                if (thresholds.rpmCritical <= thresholds.rpmWarning)
+                    errors.Add("telemetry: rpmCritical deve ser maior que rpmWarning.");
+            }
+
+            var copy = telemetry.statusCopy;
+            if (copy == null)
+                errors.Add("telemetry.statusCopy ausente.");
+            else
+            {
+                if (string.IsNullOrWhiteSpace(copy.normal))
+                    errors.Add("telemetry.statusCopy.normal vazio.");
+                if (string.IsNullOrWhiteSpace(copy.warning))
+                    errors.Add("telemetry.statusCopy.warning vazio.");
+                if (string.IsNullOrWhiteSpace(copy.critical))
+                    errors.Add("telemetry.statusCopy.critical vazio.");
+            }
+
+            if (telemetry.samples == null || telemetry.samples.Length == 0)
+            {
+                errors.Add("telemetry.samples vazio.");
+                return;
+            }
+
+            var hasZero = false;
+            float? previous = null;
+            for (var i = 0; i < telemetry.samples.Length; i++)
+            {
+                var sample = telemetry.samples[i];
+                var label = $"telemetry.samples[{i}]";
+                if (sample == null)
+                {
+                    errors.Add($"{label}: entrada nula.");
+                    continue;
+                }
+
+                if (sample.atSeconds < 0f)
+                    errors.Add($"{label}: atSeconds negativo ({sample.atSeconds}).");
+                if (Math.Abs(sample.atSeconds) < 1e-6f)
+                    hasZero = true;
+                if (previous.HasValue && sample.atSeconds <= previous.Value)
+                    errors.Add($"{label}: atSeconds deve ser estritamente crescente.");
+                previous = sample.atSeconds;
+            }
+
+            if (!hasZero)
+                errors.Add("telemetry.samples precisa de uma amostra com atSeconds == 0.");
         }
 
         /// <summary>

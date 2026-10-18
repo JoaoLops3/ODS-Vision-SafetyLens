@@ -139,7 +139,9 @@ namespace Facens.SafetyLens
                 case AppPhase.Identification: DrawHome(); break;
                 case AppPhase.Scanning:
                 case AppPhase.RiskInspection: DrawCamera(); break;
+                case AppPhase.EquipmentBrief: DrawEquipmentBrief(); break;
                 case AppPhase.Quiz: DrawQuiz(); break;
+                case AppPhase.Telemetry: DrawTelemetry(); break;
                 case AppPhase.Finished: DrawResult(); break;
                 case AppPhase.History: DrawHistory(); break;
             }
@@ -167,12 +169,12 @@ namespace Facens.SafetyLens
             var compact = sa.height / _scale < CompactHeightThreshold;
 
             const string headline = "Reconheça os riscos antes de operar.";
-            const string lead = "Aponte a câmera para a placa do equipamento, encontre as zonas de risco e os EPIs e responda um quiz rápido.";
+            const string lead = "Aponte a câmera para a placa ou o QR, leia a ficha do equipamento, encontre as zonas de risco e os EPIs e responda o quiz.";
             var steps = new[]
             {
-                "Abra a câmera e enquadre a placa",
-                "Toque em cada item destacado",
-                "Responda 3 perguntas de fixação"
+                "Enquadre a placa ou o QR",
+                "Leia a ficha do equipamento",
+                "Toque nos itens e responda o quiz"
             };
             var helper = string.IsNullOrEmpty(_controller.IdentificationError)
                 ? "Use o código informado pelo pesquisador."
@@ -290,6 +292,126 @@ namespace Facens.SafetyLens
             if (searching) DrawReticle(sa, c.Phase == AppPhase.Scanning ? "Enquadre a placa do equipamento" : "Marcador perdido");
 
             DrawCameraSheet(sa);
+        }
+
+        /// <summary>
+        /// Ficha do equipamento sobre a câmera. O texto permanece se o marcador oscilar;
+        /// o CTA só libera com tracking estável.
+        /// </summary>
+        void DrawEquipmentBrief()
+        {
+            var sa = SafeArea();
+            var c = _controller;
+            var pad = U(T.SpaceLg);
+
+            var top = sa.y + U(T.SpaceSm);
+            var close = new Rect(sa.x + pad, top, U(T.TouchMin), U(T.TouchMin));
+            Fill(close, T.Surface, close.height * 0.5f);
+            Label(close, "×", _glyph);
+            Block(close);
+            if (GUI.Button(close, GUIContent.none, _hitArea)) c.RestartSession();
+
+            var stats = $"{FormatTime(c.ElapsedSeconds)}   ·   {c.ErrorCount} {(c.ErrorCount == 1 ? "erro" : "erros")}";
+            var statsStyle = OnDark(_captionStrong);
+            var statsW = MeasureWidth(stats, statsStyle) + U(T.SpaceLg) * 2f;
+            var statsPill = new Rect(sa.xMax - pad - statsW, top + (U(T.TouchMin) - U(36f)) * 0.5f, statsW, U(36f));
+            Fill(statsPill, T.Scrim, statsPill.height * 0.5f);
+            Label(statsPill, stats, Centered(statsStyle));
+            Block(statsPill);
+
+            var toastY = top + U(T.TouchMin) + U(T.SpaceMd);
+            toastY = DrawArAvailabilityBanner(sa, toastY);
+            toastY = DrawTrackingBanner(sa, toastY);
+            DrawToast(sa, toastY);
+
+            if (!c.TargetFound)
+                DrawReticle(sa, "Enquadre o marcador para continuar");
+
+            DrawEquipmentBriefSheet(sa);
+        }
+
+        void DrawEquipmentBriefSheet(Rect sa)
+        {
+            var c = _controller;
+            var equipment = c.Equipment;
+            var margin = U(T.SpaceMd);
+            var inner = U(T.SpaceLg);
+            var sheetW = sa.width - margin * 2f;
+            var w = sheetW - inner * 2f;
+
+            var name = equipment?.name ?? c.TelemetryEquipmentName;
+            var function = equipment?.function ?? string.Empty;
+            var summary = equipment?.summary ?? string.Empty;
+            var highlights = equipment?.riskHighlights;
+
+            string hint;
+            if (!c.TargetFound)
+                hint = "Enquadre o marcador para continuar";
+            else if (c.TargetUnstable)
+                hint = "Segure o enquadramento…";
+            else
+                hint = string.Empty;
+
+            var canStart = c.CanConfirmEquipmentBrief;
+            const string buttonLabel = "Iniciar inspeção";
+            const string overline = "EQUIPAMENTO";
+
+            var h = inner;
+            h += U(26f) + U(T.SpaceSm);
+            h += Measure(name, _title, w) + U(T.SpaceXs);
+            if (!string.IsNullOrEmpty(function))
+                h += Measure(function, _body, w) + U(T.SpaceXs);
+            if (!string.IsNullOrEmpty(summary))
+                h += Measure(summary, _body, w) + U(T.SpaceMd);
+            if (highlights != null)
+            {
+                foreach (var item in highlights)
+                {
+                    if (string.IsNullOrWhiteSpace(item)) continue;
+                    h += Measure("• " + item, _bodyStrong, w) + U(T.SpaceXs);
+                }
+                h += U(T.SpaceSm);
+            }
+            if (!string.IsNullOrEmpty(hint))
+                h += Measure(hint, ErrorCaption(), w) + U(T.SpaceSm);
+            h += U(T.ControlHeight);
+            h += inner;
+
+            var sheet = new Rect(sa.x + margin, sa.yMax - margin - h, sheetW, h);
+            Fill(sheet, T.Surface, U(T.RadiusLg));
+            Block(sheet);
+
+            var x = sheet.x + inner;
+            var y = sheet.y + inner;
+
+            var chipStyle = Colored(_overline, T.InkSoft);
+            var chipW = MeasureWidth(overline, chipStyle) + U(T.SpaceMd) * 2f;
+            var chip = new Rect(x, y, chipW, U(26f));
+            Fill(chip, T.SurfaceMuted, chip.height * 0.5f);
+            Label(chip, overline, Centered(chipStyle));
+            y += chip.height + U(T.SpaceSm);
+
+            y += Paragraph(x, y, w, name, _title) + U(T.SpaceXs);
+            if (!string.IsNullOrEmpty(function))
+                y += Paragraph(x, y, w, function, _body) + U(T.SpaceXs);
+            if (!string.IsNullOrEmpty(summary))
+                y += Paragraph(x, y, w, summary, _body) + U(T.SpaceMd);
+
+            if (highlights != null)
+            {
+                foreach (var item in highlights)
+                {
+                    if (string.IsNullOrWhiteSpace(item)) continue;
+                    y += Paragraph(x, y, w, "• " + item, _bodyStrong) + U(T.SpaceXs);
+                }
+                y += U(T.SpaceSm);
+            }
+
+            if (!string.IsNullOrEmpty(hint))
+                y += Paragraph(x, y, w, hint, ErrorCaption()) + U(T.SpaceSm);
+
+            if (PrimaryButton(new Rect(x, y, w, U(T.ControlHeight)), buttonLabel, canStart))
+                c.ConfirmEquipmentBrief();
         }
 
         void DrawCameraSheet(Rect sa)
@@ -426,7 +548,12 @@ namespace Facens.SafetyLens
                 Paragraph(x, verdictY, w, verdict, verdictStyle);
 
                 var last = c.ActiveQuizIndex >= c.QuizCount - 1;
-                if (PrimaryButton(buttonRect, last ? "Ver resultado" : "Próxima pergunta"))
+                var nextLabel = !last
+                    ? "Próxima pergunta"
+                    : c.TelemetryEnabled
+                        ? "Ver leitura"
+                        : "Ver resultado";
+                if (PrimaryButton(buttonRect, nextLabel))
                     c.NextQuiz();
             }
             else
@@ -483,6 +610,106 @@ namespace Facens.SafetyLens
             if (!answered && GUI.Button(rect, GUIContent.none, _hitArea))
                 c.AnswerQuiz(index);
             return h;
+        }
+
+        /// <summary>
+        /// RF12 — leitura simulada do equipamento sobre a câmera (marcador visível, sem overlays 3D).
+        /// </summary>
+        void DrawTelemetry()
+        {
+            var sa = SafeArea();
+            var c = _controller;
+            var pad = U(T.SpaceLg);
+            var sample = c.CurrentTelemetrySample;
+
+            var top = sa.y + U(T.SpaceSm);
+            var close = new Rect(sa.x + pad, top, U(T.TouchMin), U(T.TouchMin));
+            Fill(close, T.Surface, close.height * 0.5f);
+            Label(close, "×", _glyph);
+            Block(close);
+            if (GUI.Button(close, GUIContent.none, _hitArea)) c.RestartSession();
+
+            var phaseLabel = $"Leitura  ·  {FormatTime(c.TelemetryPhaseSeconds)}";
+            var phaseStyle = OnDark(_captionStrong);
+            var phaseW = MeasureWidth(phaseLabel, phaseStyle) + U(T.SpaceLg) * 2f;
+            var phasePill = new Rect(sa.xMax - pad - phaseW, top + (U(T.TouchMin) - U(36f)) * 0.5f, phaseW, U(36f));
+            Fill(phasePill, T.Scrim, phasePill.height * 0.5f);
+            Label(phasePill, phaseLabel, Centered(phaseStyle));
+            Block(phasePill);
+
+            var margin = U(T.SpaceMd);
+            var inner = U(T.SpaceLg);
+            var sheetW = sa.width - margin * 2f;
+            var w = sheetW - inner * 2f;
+
+            var status = c.CurrentTelemetryStatus;
+            var statusLabel = SafetyLensTelemetry.NarrativeLabel(status);
+            var statusColor = status == SafetyLensTelemetryStatus.Critical
+                ? T.Danger
+                : status == SafetyLensTelemetryStatus.Warning
+                    ? T.Brand
+                    : T.Success;
+            var statusSoft = status == SafetyLensTelemetryStatus.Critical
+                ? T.DangerSoft
+                : status == SafetyLensTelemetryStatus.Warning
+                    ? T.SurfaceMuted
+                    : T.SuccessSoft;
+
+            var temp = sample != null ? sample.temperature.ToString("F1", CultureInfo.InvariantCulture) + " °C" : "—";
+            var press = sample != null ? sample.pressure.ToString("F2", CultureInfo.InvariantCulture) + " bar" : "—";
+            var rpm = sample != null ? sample.rpm.ToString("F0", CultureInfo.InvariantCulture) : "—";
+            var stamp = sample != null
+                ? c.CurrentTelemetryLocalTime.ToString("HH:mm:ss", CultureInfo.InvariantCulture)
+                : "—";
+
+            var title = c.TelemetryEquipmentName;
+            var body = string.IsNullOrWhiteSpace(c.CurrentTelemetryNarrativeCopy)
+                ? "Valores simulados atualizam sozinhos. Observe Ideal → Cuidado → Perigoso e conclua."
+                : c.CurrentTelemetryNarrativeCopy;
+
+            var h = inner;
+            h += U(26f) + U(T.SpaceSm);
+            h += Measure(title, _title, w) + U(T.SpaceXs);
+            h += Measure(body, _body, w) + U(T.SpaceMd);
+            h += U(44f) + U(T.SpaceMd);
+            h += U(72f) + U(T.SpaceMd);
+            h += U(T.ControlHeight);
+            h += inner;
+
+            var sheet = new Rect(sa.x + margin, sa.yMax - margin - h, sheetW, h);
+            Fill(sheet, T.Surface, U(T.RadiusLg));
+            Block(sheet);
+
+            var x = sheet.x + inner;
+            var y = sheet.y + inner;
+
+            var overline = "LEITURA DO EQUIPAMENTO";
+            var chipStyle = Colored(_overline, T.InkSoft);
+            var chipW = MeasureWidth(overline, chipStyle) + U(T.SpaceMd) * 2f;
+            var chip = new Rect(x, y, chipW, U(26f));
+            Fill(chip, T.SurfaceMuted, chip.height * 0.5f);
+            Label(chip, overline, Centered(chipStyle));
+            Label(new Rect(x, y, w, chip.height), stamp, Aligned(_caption, TextAnchor.MiddleRight));
+            y += chip.height + U(T.SpaceSm);
+
+            y += Paragraph(x, y, w, title, _title) + U(T.SpaceXs);
+            y += Paragraph(x, y, w, body, _body) + U(T.SpaceMd);
+
+            var statusRect = new Rect(x, y, w, U(44f));
+            Fill(statusRect, statusSoft, U(T.RadiusMd));
+            Label(statusRect, statusLabel, Centered(Colored(_title, statusColor)));
+            y += statusRect.height + U(T.SpaceMd);
+
+            var gap = U(T.SpaceSm);
+            var cellW = (w - gap * 2f) / 3f;
+            var cellH = U(72f);
+            DrawMetric(new Rect(x, y, cellW, cellH), temp, "Temperatura");
+            DrawMetric(new Rect(x + cellW + gap, y, cellW, cellH), press, "Pressão");
+            DrawMetric(new Rect(x + (cellW + gap) * 2f, y, cellW, cellH), rpm, "RPM");
+            y += cellH + U(T.SpaceMd);
+
+            if (PrimaryButton(new Rect(x, y, w, U(T.ControlHeight)), "Concluir leitura"))
+                c.CompleteTelemetry();
         }
 
         void DrawResult()
