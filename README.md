@@ -121,16 +121,26 @@ Materiais complementares (persona, jornada): pasta [`docs/documents/`](docs/docu
 | RF01 | Rastreamento de imagem            | Identifica os Image Targets (`SafetyLensEquipmentTarget` e `SafetyLensQrTarget`) via `ARTrackedImageManager` | ✅     |
 | RF02 | Exibição de conteúdo em RA        | Zonas vermelhas de alerta + placas HOT/PINCH e capacete EPI filhos do marcador (UV A/B/C)                    | ✅     |
 | RF03 | Interação por toque               | Toque no overlay do item ativo + confirmação; toque errado conta erro; quiz                                  | ✅     |
-| RF04 | Cronometragem                     | Tempo de inspeção (marcador → último risco) e tempo de quiz medidos em separado, mais o total                | ✅     |
+| RF04 | Cronometragem                     | Tempo de inspeção (marcador → último risco, **inclui a leitura da ficha**) e tempo de quiz, mais o total     | ✅     |
 | RF05 | Registro de erros                 | Contabiliza seleções e respostas incorretas                                                                  | ✅     |
-| RF06 | Exportação local                  | JSON + CSV em `persistentDataPath` (inclui tempos, FPS/memória e marcador usado); histórico e share iOS      | ✅     |
+| RF06 | Exportação local                  | JSON + CSV em `persistentDataPath` (tempos RF04, etapas, FPS/memória, marcador); histórico e share iOS       | ✅     |
 | RF07 | Câmera sob demanda                | `ARSession` só ativa após “Abrir câmera”                                                                     | ✅     |
 | RF08 | Histórico de sessões              | Lista e reexporta sessões salvas no aparelho                                                                 | ✅     |
 | RF09 | Share Android nativo              | Intent + FileProvider (`SafetyLensNativeShare`)                                                              | ✅     |
-| RF10 | Experimento SUS / retenção 7 dias | Módulo completo do protocolo do artigo                                                                       | 🚧     |
+| RF10 | Experimento SUS / retenção 7 dias | Protocolo do artigo **fora do app** (Google Forms + reteste em 7 dias); o app exporta métricas de sessão     | ✅     |
 | RF11 | Marcador QR alternativo           | QR Code rastreado como Image Target (12 cm), com layout próprio de âncoras (`altTargets`)                    | ✅     |
+| RF12 | Leitura simulada do equipamento   | Após o quiz: temperatura, pressão, RPM; UI Ideal/Cuidado/Perigoso; CSV NORMAL/ATENCAO/CRITICO; sem REST      | ✅     |
 
 **Legenda:** ✅ Implementado · 🚧 Em desenvolvimento · ⬜ Planejado · ❌ Cancelado
+
+### RF10 — Google Forms (protocolo externo)
+
+| Momento | Formulário | Link |
+| --- | --- | --- |
+| Dia 0 (após a sessão no app) | [SafetyLens — Usabilidade (SUS) — Dia 0](https://docs.google.com/forms/d/e/1FAIpQLScPRBjHCm_0_71R-zh___C8pVwI2r2aRMy5DMoN1E-1upNS9A/viewform?usp=sharing) | Compartilhar com o participante |
+| Dia +7 | [SafetyLens — Retenção de conteúdo — Dia +7](https://docs.google.com/forms/d/e/1FAIpQLSdimYtWhPwys-iYmTVu39yTXjlomWT_0wiKFxOCUhSRv-wsiA/viewform?usp=sharing) | Mesmo nome/e-mail do Dia 0 |
+
+Scripts geradores (Apps Script): [`Tools/google-forms-sus-dia0.gs`](Tools/google-forms-sus-dia0.gs) e [`Tools/google-forms-retencao-dia7.gs`](Tools/google-forms-retencao-dia7.gs).
 
 ---
 
@@ -228,10 +238,10 @@ Não utilizamos Plane Detection como fluxo principal, nem óculos dedicados.
 1. Usuário informa ID e toca em **Abrir câmera** (`ARSession` ativa).
 2. `ARTrackedImageManager` analisa o feed em busca de `SafetyLensEquipmentTarget` **ou** `SafetyLensQrTarget`.
 3. Com `TrackingState.Tracking`, obtém-se a pose do marcador, trava a sessão nesse alvo e inicia o cronômetro de inspeção (RF04).
-4. Conteúdo é parentalizado no `ARTrackedImage`; posições vêm de **UV** (`u`/`v`) — letras A/B/C no WL03, layout `altTargets` no QR.
-5. Placas billboardam para a câmera; o capacete assenta no plano do marcador.
+4. Abre a **ficha do equipamento**. O tempo da leitura entra em `inspectionSeconds`.
+5. Conteúdo é parentalizado no `ARTrackedImage`; posições vêm de **UV** (`u`/`v`) — letras A/B/C no WL03, layout `altTargets` no QR.
 6. Toque no item ativo **seleciona** (RF03); o botão **Confirmar item** só então conclui o passo.
-7. Após HOT → PINCH → EPI, segue quiz e exportação local (RF06).
+7. Após HOT → PINCH → EPI, segue quiz, telemetria (se habilitada) e exportação local (RF06), com tempos por etapa no CSV.
 
 ### 11.3 Elementos virtuais
 
@@ -295,8 +305,16 @@ SafetyLens/
 
 | Script                                 | Responsabilidade                                                  |
 | -------------------------------------- | ----------------------------------------------------------------- |
-| `SafetyLensSessionController.cs`       | Fases da sessão, tracking, seleção/confirmação AR, quiz, métricas |
-| `SafetyLensStatusOverlay.cs`           | UI IMGUI (identificação, câmera, quiz, resultado, histórico)      |
+| `SafetyLensSessionController.cs`       | Facade da sessão (API estável para o IMGUI) |
+| `SafetyLensSessionFlow.cs`             | Máquina de estados `AppPhase` |
+| `SafetyLensSessionClock.cs`            | Relógios RF04 (elapsed / inspeção / quiz), testável |
+| `SafetyLensStageTimeline.cs`           | Instantes das etapas (relativos ao 1º tracking) |
+| `SafetyLensArTrackingService.cs`       | Image Tracking, graça P1-6, câmera sob demanda |
+| `SafetyLensArContentService.cs`        | Overlays 3D, UV, pick RF03 |
+| `SafetyLensTelemetry.cs`               | RF12: amostra por tempo da fase + status por limiares (domínio puro) |
+| `SafetyLensTelemetrySession.cs`        | Estado da fase RF12 (não altera relógios de pesquisa) |
+| `SafetyLensScenarioLoader.cs`          | Load + validação do JSON de cenário |
+| `SafetyLensStatusOverlay.cs`           | UI IMGUI (identificação, câmera, quiz, telemetria, resultado, histórico) |
 | `SafetyLensArVisuals.cs`               | Fábrica dos overlays (placas + capacete)                          |
 | `SafetyLensPictograms.cs`              | Rasterização das placas ISO em background                         |
 | `SafetyLensBillboard.cs`               | Orientação legível dos rótulos                                    |
@@ -379,15 +397,16 @@ cd ODS-Vision-SafetyLens
 1. Abra o app e autorize a **câmera**.
 2. Digite o ID do participante (ex.: `P01`) → **Abrir câmera**.
 3. Aponte para o marcador WL03 (~20 cm) **ou** o QR (~12 cm). A sessão fica no primeiro reconhecido.
-4. Aguarde o reconhecimento (cronômetro inicia).
-5. Para cada item (HOT → PINCH → EPI):
+4. Aguarde o reconhecimento (cronômetro inicia) e leia a **ficha do equipamento**.
+5. Com o marcador estável, toque em **Iniciar inspeção**. Para cada item (HOT → PINCH → EPI):
 
 - toque no overlay destacado na câmera (seleção);
 - toque em **Confirmar item** no card inferior.
 
 6. Responda o quiz de fixação.
-7. Veja o resultado; exporte/compartilhe CSV se necessário.
-8. Use **Histórico** para sessões anteriores.
+7. Se a telemetria estiver habilitada no cenário (RF12), observe a leitura do equipamento (valores e status mudam sozinhos) e toque em **Concluir leitura**.
+8. Veja o resultado; exporte/compartilhe CSV se necessário.
+9. Use **Histórico** para sessões anteriores.
 
 ### Screenshots da interface (versão 1)
 
@@ -434,13 +453,17 @@ flowchart TD
     C --> D[Buscar marcador]
     D --> E{Tracking?}
     E -- Não --> D
-    E -- Sim --> F[Overlays A/B/C]
+    E -- Sim --> Brief[Ficha do equipamento]
+    Brief --> F[Overlays A/B/C]
     F --> G[Toque no item ativo]
     G --> H[Confirmar item]
     H --> I{Todos os itens?}
     I -- Não --> F
     I -- Sim --> J[Quiz]
-    J --> K[Resultado + export JSON/CSV]
+    J --> T{Telemetria RF12?}
+    T -- Sim --> U[Leitura do equipamento]
+    U --> K[Resultado + export JSON/CSV]
+    T -- Não --> K
     K --> L[Fim]
 ```
 
@@ -450,7 +473,7 @@ flowchart TD
 
 | Ator                    | Objetivo                  | Fluxo principal                                                                 |
 | ----------------------- | ------------------------- | ------------------------------------------------------------------------------- |
-| Participante            | Completar inspeção guiada | ID → câmera → reconhecer marcador → selecionar/confirmar riscos → quiz → export |
+| Participante            | Completar inspeção guiada | ID → câmera → marcador → ficha → selecionar/confirmar riscos → quiz → export |
 | Pesquisador / instrutor | Coletar métricas          | Lê JSON/CSV gerados no aparelho (tempo, erros, respostas)                       |
 
 ---
@@ -462,9 +485,13 @@ Identificação (ID)
     ↓
 Scanning (câmera)
     ↓
+Equipment Brief (ficha)
+    ↓
 Risk Inspection (HOT → PINCH → EPI)
     ↓
 Quiz
+    ↓
+Telemetry (RF12, se enabled no JSON)
     ↓
 Finished (resultado / share)
     ↔ History (opcional)
@@ -544,7 +571,7 @@ Roteiro ampliado: `[TESTE_DE_ACEITACAO.md](TESTE_DE_ACEITACAO.md)`.
 - Em `TrackingState.Limited` há graça (~1,5 s) com banner; após o prazo o overlay some e a seleção zera (cronômetro não reseta).
 - Calibração fina de UV/escala ainda pode ser refinada (capacete vs letra C; layout do QR na tela).
 - Share nativo: iOS validado; Android implementado (Intent + FileProvider), QA end-to-end pendente.
-- Protocolo experimental completo (grupo controle 2D, SUS, retenção 7 dias) ainda em desenvolvimento no software.
+- Protocolo SUS + retenção 7 dias: **Google Forms** (fora do app). Links na seção RF10 acima. O SafetyLens grava tempo/erros/CSV; a equipe aplica o questionário e o reteste.
 - UI em IMGUI: acessibilidade limitada (VoiceOver / Dynamic Type).
 - Build iOS exige workaround do **Module Verifier** do Xcode em alguns ambientes.
 
@@ -560,6 +587,8 @@ Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-po
 | Evidência no iPhone     | `docs/images/v1/evidencias/` _(foto local opcional)_                                                 |
 | Vídeo demonstrativo (v1)| [YouTube Shorts](https://youtube.com/shorts/QbRCsMurnhY) · [`Video_V1.mov`](docs/images/v1/evidencias/Video_V1.mov) ✅ |
 | Artigo científico       | [SharePoint (Word — versão atualizada)](https://facens-my.sharepoint.com/:w:/g/personal/223969_facens_br/IQC635MrvwTJQr-ThWC7yNzgAfASb7rOqj2sZgzheg6sdYE?e=UEWZgv) |
+| SUS Dia 0 (Forms)       | [Usabilidade (SUS)](https://docs.google.com/forms/d/e/1FAIpQLScPRBjHCm_0_71R-zh___C8pVwI2r2aRMy5DMoN1E-1upNS9A/viewform?usp=sharing) ✅ |
+| Retenção Dia +7 (Forms) | [Retenção de conteúdo](https://docs.google.com/forms/d/e/1FAIpQLSdimYtWhPwys-iYmTVu39yTXjlomWT_0wiKFxOCUhSRv-wsiA/viewform?usp=sharing) ✅ |
 
 ---
 
@@ -595,7 +624,7 @@ Plano de melhorias: `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-po
 | EditMode 34/34                     | Equipe            | ✅     |
 | Testes Android ARCore              | Equipe            | ⬜     |
 | Alvo impresso 20 cm                | Equipe            | ⬜     |
-| Experimento SUS / retenção 7 dias  | Equipe            | 🚧     |
+| Experimento SUS / retenção 7 dias  | Equipe (Forms)    | ✅ protocolo externo |
 
 ---
 
@@ -646,7 +675,7 @@ Evita-se um único commit com todo o projeto. Branches/tags conforme necessidade
 ## 30. Melhorias Futuras
 
 - Calibração fina UV/escala nas letras A/B/C e no layout do QR.
-- Protocolo completo SUS + retenção 7 dias no app.
+- (Feito) SUS + retenção 7 dias via Google Forms — não no app.
 - QA no alvo impresso de 20 cm e Android ponta a ponta (dependem da equipe).
 
 Ver também `[plans/melhorias-ra-pos-auditoria.md](plans/melhorias-ra-pos-auditoria.md)`.

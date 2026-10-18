@@ -10,8 +10,11 @@ Hardware (câmera + sensores)
   → ARCore / ARKit
     → AR Foundation (AR Tracked Image Manager + Reference Image Library)
       → Unity (cena / renderização / raycast)
-        → Lógica C# (sessão, riscos, quiz, tempo, erros)
-          → Persistência local JSON/CSV
+        → SafetyLensSessionController (facade)
+            → SessionFlow + SessionClock + StageTimeline + InspectionProgress + PerformanceProbe
+            → ArTrackingService (Image Tracking) + ArContentService
+            → TelemetrySession (RF12) + ScenarioLoader
+          → Persistência local JSON/CSV (SessionStore)
 ```
 
 ## Hierarquia da cena
@@ -28,9 +31,11 @@ SafetyLens Status Overlay
 
 1. **Identificação** — ID do participante (RF06 / tela 1).
 2. **Scanning** — câmera busca o Image Target (RF01 / tela 2).
-3. **RiskInspection** — zonas vermelhas + placas ISO + EPIs em RA; toque confirma (RF02, RF03 / tela 3). Cronômetro de inspeção e sonda de FPS/memória (RF04 / RNF02).
-4. **Quiz** — perguntas de fixação; erros contabilizados (RF03, RF05 / tela 4). Tempo de quiz separado do de inspeção.
-5. **Finished** — tempo total + inspeção + quiz + FPS/memória + marcador usado; exportação JSON/CSV local (RF04, RF06).
+3. **EquipmentBrief** — ficha do equipamento (nome, função, riscos). O cronômetro RF04 já corre desde o tracking; o tempo da ficha entra em `inspectionSeconds`. CTA só com tracking estável.
+4. **RiskInspection** — zonas vermelhas + placas ISO + EPIs em RA; toque confirma (RF02, RF03 / tela 3). Sonda de FPS/memória (RNF02).
+5. **Quiz** — perguntas de fixação; erros contabilizados (RF03, RF05 / tela 4). Tempo de quiz separado do de inspeção.
+6. **Telemetry** (RF12, opcional) — depois do quiz, se `telemetry.enabled` no cenário: câmera ligada, overlays 3D ocultos, painel 2D com temperatura/pressão/RPM e status Ideal/Cuidado/Perigoso. Não altera `elapsedSeconds` / `quizSeconds`. Sem REST (RNF05).
+7. **Finished** — tempos RF04 + etapas no CSV + FPS/memória + marcador + (se RF12) leituras; exportação JSON/CSV local (RF04, RF06).
 
 ## Origem do código
 
@@ -42,6 +47,7 @@ SafetyLens Status Overlay
 | Validação de ordem / rejeição | WL04 (ideia de “fora de ordem” → erros) |
 | Overlay IMGUI + Editor setup | WL02/WL03/WL04 (padrão) |
 | Tela de participante, quiz, contador de erros, export | Artigo (RF03–RF06), padrão WL |
+| Leitura simulada + status por limiares (RF12) | WL05 (idéia; painel 2D, sem cards 3D nem REST) |
 
 ## Conteúdo externo
 
@@ -55,7 +61,7 @@ A sessão trava no **primeiro** Image Target reconhecido (`markerName` no export
 
 ### Tracking Limited (P1-6)
 
-`TrackingLossGate` (classe pura) + polling em `Update` (`UpdateTargetVisibility`):
+`TrackingLossGate` (classe pura) + `SafetyLensArTrackingService.UpdateVisibility`:
 
 | Estado | Condição | UI / RA |
 |---|---|---|
@@ -63,7 +69,7 @@ A sessão trava no **primeiro** Image Target reconhecido (`markerName` no export
 | **Unstable** | Limited/None dentro de 1,5 s **e** 10 frames | Conteúdo visível, seleção preservada, banner amarelo, toque/confirmar bloqueados |
 | **Lost** | Passou o prazo | `SetTargetFound(false)`: esconde overlays, zera seleção, “Marcador perdido” |
 
-Fase e cronômetro (`_startedAt`) **não** pausam nem resetam. Durante Scanning o gate é resetado (sem banner). Ao entrar no Quiz o gate reseta e a câmera desliga.
+Fase e cronômetro (`_startedAt`) **não** pausam nem resetam. O gate vale em **EquipmentBrief** e **RiskInspection** (CTA da ficha e toque RF03 só com tracking estável). Durante Scanning o gate é resetado (sem banner). Ao entrar no Quiz o gate reseta e a câmera desliga.
 
 ## Validação no Editor
 

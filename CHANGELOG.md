@@ -1,5 +1,42 @@
 # Changelog — SafetyLens
 
+## 1.4.1
+
+- RF10: SUS e retenção 7 dias definidos como **protocolo externo** (Google Forms), não módulo no app
+- Links dos Forms documentados no README (Dia 0 e Dia +7)
+- Scripts Apps Script em `Tools/google-forms-sus-dia0.gs` e `Tools/google-forms-retencao-dia7.gs`
+
+## 1.4.0
+
+Ficha do equipamento + tempos por etapa no CSV:
+
+- Após o reconhecimento do marcador/QR, abre a ficha (`equipment` no JSON) antes da inspeção
+- O tempo de inspeção (RF04) **inclui a leitura da ficha** após o tracking; inspeção ativa ≈ `inspectionSeconds - briefSeconds`
+- Colunas novas no fim do CSV: `briefSeconds`, `inspectionEndedAtSeconds`, `quizEndedAtSeconds`, `telemetryEndedAtSeconds`, `finishedAtSeconds`
+- `telemetryEndedAtSeconds` é 0 se a leitura RF12 não rodou
+- Telemetria na tela: Ideal / Cuidado / Perigoso (`statusCopy`); CSV de status inalterado
+- CTA **Iniciar inspeção** só com tracking estável (P1-6)
+
+## 1.3.0
+
+Refatoração interna (SOLID) sem mudar o experimento:
+
+- `SafetyLensSessionController` virou facade; fluxo, relógio, tracking, conteúdo 3D e telemetria saíram para colaboradores
+- Fórmulas de `ElapsedSeconds` / `InspectionSeconds` / `QuizSeconds` e a origem de `ErrorCount` permanecem as mesmas
+- IMGUI intacto; Image Tracking only; export JSON/CSV offline
+- `SafetyLensScenarioLoader` e `SessionStore` com mensagens claras em falha de I/O
+- Testes EditMode do clock, do fluxo e do loader
+
+## 1.2.0
+
+RF12 — leitura simulada do equipamento (idéia WL05 / aula 10):
+
+- Fase `Telemetry` depois do quiz: temperatura, pressão, RPM e status (NORMAL / ATENÇÃO / CRÍTICO) por roteiro no `safetylens_scenario.json`
+- Painel 2D com câmera ligada e overlays 3D ocultos; sem REST (RNF05)
+- `telemetry.enabled: false` (ou bloco ausente) mantém o fluxo medido do artigo (quiz → resultado)
+- CSV/JSON: colunas `telemetryStatus`, `temperature`, `pressure`, `rpm` no fim da linha
+- Domínio puro em `SafetyLensTelemetry` + testes EditMode e validação de cenário
+
 ## 1.1.0
 
 Alinhamento com o artigo científico (RF04, RNF02, interface e marcadores):

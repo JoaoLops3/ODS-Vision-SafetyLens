@@ -8,6 +8,25 @@ Edite `Assets/Resources/safetylens_scenario.json`:
 - `hazards[]`: zonas `alert` (placa + zona vermelha) e `epi` (modelo 3D), ancoradas por **UV no marcador**.
 - `quiz[]`: pergunta, opções e `correctIndex` (base 0).
 - `altTargets[]`: Image Targets alternativos (ex.: QR Code) com UVs próprios por hazard.
+- `equipment`: ficha obrigatória (nome, função, resumo e destaques de risco) após o tracking.
+- `telemetry` (RF12): leitura simulada após o quiz. Com `enabled: false` (ou bloco ausente), o quiz vai direto ao resultado — útil para o protocolo medido do artigo.
+
+### Telemetria simulada (RF12 / WL05)
+
+Bloco opcional no mesmo JSON. Sem REST: o roteiro é local e determinístico.
+
+| Campo | Significado |
+|---|---|
+| `enabled` | `true` abre a fase depois do quiz; `false` pula |
+| `equipmentName` | Título no painel (fallback se `equipment.name` faltar) |
+| `thresholds` | Limiares de atenção e crítico para temperatura, pressão e RPM |
+| `samples[].atSeconds` | Instantes do roteiro (precisa existir `0`; tempos estritamente crescentes) |
+| `samples[].temperature` / `pressure` / `rpm` | Valores naquele instante |
+| `statusCopy` | Frases da UI (Ideal / Cuidado / Perigoso). Obrigatório se `enabled` |
+
+O status CSV (NORMAL / ATENCAO / CRITICO) é calculado em runtime pelos limiares. A tela usa Ideal / Cuidado / Perigoso. O CSV recebe `telemetryStatus`, temp/pressão/RPM e, no fim, os tempos de etapa (`briefSeconds` … `finishedAtSeconds`). `telemetryEndedAtSeconds` é `0.00` se a fase não rodou.
+
+O tempo de inspeção (RF04) inclui a leitura da ficha após o reconhecimento do marcador. Inspeção ativa ≈ `inspectionSeconds - briefSeconds`.
 
 ### Âncoras UV (A / B / C)
 
@@ -104,14 +123,16 @@ Arquivos em `Application.persistentDataPath`:
 
 Campos: participantId, tempo total, **tempo de inspeção e de quiz separados (RF04)**, erros,
 hazards, respostas do quiz, **FPS médio / percentil 1 / fração abaixo de 30 FPS / pico de
-memória (RNF02)** e o **marcador usado** (`markerName`). Colunas novas sempre entram no fim
+memória (RNF02)**, o **marcador usado** (`markerName`) e **tempos de etapa** (`briefSeconds`,
+`inspectionEndedAtSeconds`, `quizEndedAtSeconds`, `telemetryEndedAtSeconds`, `finishedAtSeconds`).
+O tempo de inspeção inclui a leitura da ficha após o tracking. Colunas novas sempre entram no fim
 do CSV — arquivos antigos continuam legíveis pelas mesmas posições.
 
 ## Texto sugerido para o artigo
 
 Trechos para alinhar o PDF ao protótipo (copiar para o Word do SharePoint):
 
-- **RF04:** "O sistema deverá registrar, em segundos, o tempo de inspeção (do reconhecimento do marcador à confirmação do último risco) e o tempo de quiz, além do tempo total da sessão."
+- **RF04:** "O sistema deverá registrar, em segundos, o tempo de inspeção (do reconhecimento do marcador à confirmação do último risco, incluindo a leitura da ficha do equipamento) e o tempo de quiz, além do tempo total da sessão."
 - **Interface, item 3:** "Projeção de zonas vermelhas de alerta no plano do equipamento, combinadas com placas de advertência no padrão ISO 7010 e modelos 3D de EPIs."
 - **Metodologia:** "O rastreamento usa marcadores visuais 2D (Image Targets): uma placa ilustrada do equipamento e, alternativamente, um QR Code tratado como Image Target."
 - **RNF02 / testes de desempenho:** "A taxa de quadros (média e percentil 1%) e o pico de memória são registrados automaticamente em cada sessão."

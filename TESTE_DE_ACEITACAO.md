@@ -50,7 +50,7 @@ Unity -batchmode -nographics -projectPath . -runTests -testPlatform EditMode \
   -testResults Library/editmode-results.xml
 ```
 
-Cobertura: `TrackingLossGate`, `LocalPositionOnMarker` (UV→metros, inclusive UV externo de alvo alternativo), `SanitizeParticipantId` / `SanitizeFilePart`, `BuildCsv` (InvariantCulture + escape + colunas novas), `SafetyLensPerformanceProbe` (FPS/memória), `ResolveUv` / `IsKnownTarget` (QR) e validador de `altTargets`.
+Cobertura: `TrackingLossGate`, `LocalPositionOnMarker` (UV→metros, inclusive UV externo de alvo alternativo), `SanitizeParticipantId` / `SanitizeFilePart`, `BuildCsv` (InvariantCulture + escape + colunas novas, inclusive RF12 e tempos de etapa), `SafetyLensPerformanceProbe` (FPS/memória), `ResolveUv` / `IsKnownTarget` (QR), validador de `altTargets`, `SafetyLensTelemetry` (status + roteiro), validador de `telemetry`/`equipment`, `SafetyLensSessionClock` (RF04), `SafetyLensStageTimeline`, `SafetyLensSessionFlow` e `SafetyLensScenarioLoader`.
 
 ## Roteiro executável (&lt; 20 min) — P1-9
 
@@ -58,7 +58,7 @@ Cobertura: `TrackingLossGate`, `LocalPositionOnMarker` (UV→metros, inclusive U
 |---|---|---|---|---|---|
 | 1 | App instalado | Abrir app | Tela de ID do participante | 1 | [ ] |
 | 2 | Sessão limpa | ID vazio → iniciar; depois ID válido + Abrir câmera | Validação sem ID; câmera pede permissão (se 1ª vez) | 1 | [ ] |
-| 3 | Câmera aberta | Fluxo feliz: HOT → PINCH → EPI → quiz | JSON/CSV em persistência; métricas coerentes | 3 | [ ] |
+| 3 | Câmera aberta | Fluxo feliz: ficha → **Iniciar inspeção** → HOT → PINCH → EPI → quiz → (RF12) leitura → concluir | JSON/CSV em persistência; métricas coerentes; tempos de etapa no fim do CSV | 4 | [ ] |
 | 4 | Inspeção | Frente / ~30° (inclinar **celular**) / mesa | Placas e capacete sem cobrir ENERGIA/PROTECAO/SAIDA | 2 | [ ] |
 | 5 | Inspeção (RF03 / P0-1) | Toque fora; toque no **errado**; toque no **certo**; Confirmar sem toque; Confirmar com toque | Errado ↑ `ErrorCount`; Confirmar bloqueado sem seleção; certo + Confirmar avança | 2 | [ ] |
 | 6 | Inspeção (P1-6) | Cobrir ~1 s e descobrir | Banner amarelo; overlays visíveis; toque/Confirmar bloqueados; seleção preservada | 1 | [ ] |
@@ -72,10 +72,13 @@ Cobertura: `TrackingLossGate`, `LocalPositionOnMarker` (UV→metros, inclusive U
 | 14 | Zonas vermelhas | Inspeção no WL03 | Disco vermelho translúcido sob cada placa, **sem cobrir** ENERGIA/PROTECAO; ativo mais opaco e pulsando; concluído esmaecido | 1 | [ ] |
 | 15 | Reduce motion | Ativar "Reduzir movimento" no iOS e repetir 14 | Zona ativa **sem pulso** (opacidade constante); anel sem pulso | 1 | [ ] |
 | 16 | RNF02 no CSV | Concluir sessão; abrir CSV | `fpsAverage ≥ 30`, `fpsLow1Percent` e `peakMemoryMb` preenchidos; `framesBelow30Ratio` baixo | 1 | [ ] |
-| 17 | RF04 no CSV | Conferir a mesma sessão | `inspectionSeconds + quizSeconds ≈ elapsedSeconds` | 1 | [ ] |
-| 18 | Artigo / Android | Fluxo completo **em aparelho Android com ARCore** (Build and Run) | Paridade com iOS — pendência explícita, depende de aparelho da equipe | — | [ ] |
+| 17 | RF04 no CSV | Conferir a mesma sessão | `inspectionSeconds + quizSeconds ≈ elapsedSeconds`; ficha incluída em `inspectionSeconds`; `briefSeconds` > 0 | 1 | [ ] |
+| 18 | RF12 telemetria | Após o quiz (cenário com `telemetry.enabled`) | Câmera ligada, sem placas 3D; Ideal→Cuidado→Perigoso; **Concluir leitura** grava status CSV + `telemetryEndedAtSeconds` > 0 | 2 | [ ] |
+| 19 | RF12 desligado | `telemetry.enabled: false` (ou bloco ausente) | Última pergunta do quiz vai direto ao resultado; `telemetryEndedAtSeconds` = 0 | 1 | [ ] |
+| 21 | Ficha / P1-6 | Na ficha, cobrir o marcador | Texto permanece; **Iniciar inspeção** desabilitado até tracking estável | 1 | [ ] |
+| 20 | Artigo / Android | Fluxo completo **em aparelho Android com ARCore** (Build and Run) | Paridade com iOS — pendência explícita, depende de aparelho da equipe | — | [ ] |
 
-> **Pendências que não se resolvem por código:** itens 11 (alvo impresso de 20 cm) e 18 (Android
+> **Pendências que não se resolvem por código:** itens 11 (alvo impresso de 20 cm) e 20 (Android
 > ponta a ponta) dependem de papel impresso e aparelho físico com a equipe.
 >
 > **Nota `arcoreimg eval-img` (2026-10-15):** QR `safetylens-qr-target.png` = **100** (meta ≥ 75).
