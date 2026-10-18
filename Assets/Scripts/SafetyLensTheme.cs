@@ -113,6 +113,23 @@ namespace Facens.SafetyLens
         /// <summary>|normal·up| abaixo disso = marcador em pé (tela, parede, máquina).</summary>
         public const float ArVerticalMarkerDot = 0.6f;
 
+        /// <summary>QR viewer: distância do pivot à câmera (metros).</summary>
+        public const float QrViewerDistance = 0.62f;
+        /// <summary>QR viewer: escala do root — menor que o marcador AR para caber na tela.</summary>
+        public const float QrViewerRootScale = 1.4f;
+        /// <summary>QR viewer: meia-largura do espalhamento HOT…EPI (local, antes da escala).</summary>
+        public const float QrViewerSpreadX = 0.055f;
+        /// <summary>QR viewer: elevação leve dos itens no pivot.</summary>
+        public const float QrViewerLift = 0.012f;
+        /// <summary>QR viewer: graus por pixel no arraste.</summary>
+        public const float QrViewerOrbitSensitivity = 0.28f;
+        /// <summary>QR viewer: movimento mínimo (px) para contar como orbit, não toque RF03.</summary>
+        public const float QrViewerDragThresholdPx = 14f;
+        /// <summary>QR viewer: pitch máximo (graus) para não virar de cabeça para baixo.</summary>
+        public const float QrViewerPitchClamp = 55f;
+        /// <summary>QR viewer: fundo sólido após o scan (sem feed da câmera).</summary>
+        public static readonly Color QrViewerBackdrop = Ink;
+
         public const float SpaceXs = 4f;
         public const float SpaceSm = 8f;
         public const float SpaceMd = 12f;
