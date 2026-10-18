@@ -288,8 +288,15 @@ namespace Facens.SafetyLens
             toastY = DrawTrackingBanner(sa, toastY);
             DrawToast(sa, toastY);
 
-            var searching = c.Phase == AppPhase.Scanning || !c.TargetFound;
-            if (searching) DrawReticle(sa, c.Phase == AppPhase.Scanning ? "Enquadre a placa do equipamento" : "Marcador perdido");
+            var searching = c.Phase == AppPhase.Scanning
+                || (!c.IsQrViewerActive && !c.TargetFound);
+            if (searching)
+            {
+                var reticle = c.Phase == AppPhase.Scanning
+                    ? "Enquadre a placa do equipamento ou o QR"
+                    : (c.IsQrSession ? "QR perdido" : "Marcador perdido");
+                DrawReticle(sa, reticle);
+            }
 
             DrawCameraSheet(sa);
         }
@@ -325,7 +332,9 @@ namespace Facens.SafetyLens
             DrawToast(sa, toastY);
 
             if (!c.TargetFound)
-                DrawReticle(sa, "Enquadre o marcador para continuar");
+                DrawReticle(sa, c.IsQrSession
+                    ? "Enquadre o QR na tela do computador"
+                    : "Enquadre o marcador para continuar");
 
             DrawEquipmentBriefSheet(sa);
         }
@@ -346,9 +355,13 @@ namespace Facens.SafetyLens
 
             string hint;
             if (!c.TargetFound)
-                hint = "Enquadre o marcador para continuar";
+                hint = c.IsQrSession
+                    ? "Enquadre o QR na tela do computador"
+                    : "Enquadre o marcador para continuar";
             else if (c.TargetUnstable)
                 hint = "Segure o enquadramento…";
+            else if (c.IsQrSession)
+                hint = "Ao iniciar, os modelos abrem para girar com o dedo.";
             else
                 hint = string.Empty;
 
@@ -433,10 +446,28 @@ namespace Facens.SafetyLens
             if (!inspecting)
             {
                 overline = "PREPARAÇÃO";
-                title = "Procurando a placa";
-                body = "Segure o iPhone a uns 30 cm da placa, com boa iluminação. O cronômetro começa quando ela for reconhecida.";
+                title = "Procurando o marcador";
+                body = "Segure o iPhone a uns 30 cm da placa WL03 ou do QR na tela, com boa iluminação. O cronômetro começa no reconhecimento.";
                 hint = string.Empty;
                 buttonLabel = string.Empty;
+            }
+            else if (c.IsQrSession && c.IsQrViewerActive)
+            {
+                overline = hazard.IsEpi ? "EPI OBRIGATÓRIO" : "ZONA DE RISCO";
+                chipBg = hazard.IsEpi ? T.InfoSoft : T.DangerSoft;
+                chipFg = hazard.IsEpi ? T.Info : T.Danger;
+                title = hazard.label;
+                body = hazard.instruction;
+                if (!c.CurrentHazardArSelected)
+                {
+                    hint = "Arraste para girar. Toque no item destacado para selecionar.";
+                    buttonLabel = "Toque no modelo";
+                }
+                else
+                {
+                    hint = string.Empty;
+                    buttonLabel = "Confirmar item";
+                }
             }
             else
             {
@@ -613,9 +644,22 @@ namespace Facens.SafetyLens
         }
 
         /// <summary>
-        /// RF12 — leitura simulada do equipamento sobre a câmera (marcador visível, sem overlays 3D).
+        /// RF12 — marcador: card sobre a câmera com valores ao vivo.
+        /// QR: tela cheia com tabela estática Ideal/Cuidado/Perigoso (sem câmera).
         /// </summary>
         void DrawTelemetry()
+        {
+            if (_controller.IsQrSession)
+            {
+                DrawTelemetryQrTable();
+                return;
+            }
+
+            DrawTelemetryMarkerCamera();
+        }
+
+        /// <summary>RF12 no marcador WL03 — câmera + card com Ideal/Cuidado/Perigoso ao vivo.</summary>
+        void DrawTelemetryMarkerCamera()
         {
             var sa = SafeArea();
             var c = _controller;
@@ -710,6 +754,171 @@ namespace Facens.SafetyLens
 
             if (PrimaryButton(new Rect(x, y, w, U(T.ControlHeight)), "Concluir leitura"))
                 c.CompleteTelemetry();
+        }
+
+        /// <summary>
+        /// RF12 no QR — fundo sólido e tabela Ideal / Cuidado / Perigoso (amostras do JSON).
+        /// Sem câmera e sem valores animados como no marcador.
+        /// </summary>
+        void DrawTelemetryQrTable()
+        {
+            _blocksWholeScreen = true;
+            var sa = SafeArea();
+            var c = _controller;
+            Fill(FullScreen(), T.Background, 0f);
+
+            var pad = U(T.SpaceXl);
+            var x = sa.x + pad;
+            var w = sa.width - pad * 2f;
+            var y = sa.y + U(T.SpaceLg);
+
+            var close = new Rect(x, y, U(T.TouchMin), U(T.TouchMin));
+            Fill(close, T.Surface, close.height * 0.5f);
+            Stroke(close, T.Border, U(T.StrokeThin), close.height * 0.5f);
+            Label(close, "×", _glyph);
+            Block(close);
+            if (GUI.Button(close, GUIContent.none, _hitArea)) c.RestartSession();
+            y += close.height + U(T.SpaceLg);
+
+            y += Paragraph(x, y, w, "Leitura do equipamento", _title) + U(T.SpaceXs);
+            y += Paragraph(x, y, w, c.TelemetryEquipmentName, _body) + U(T.SpaceXs);
+            y += Paragraph(
+                    x, y, w,
+                    "Simulação RF12 em tabela (Ideal → Cuidado → Perigoso).",
+                    Colored(_caption, T.InkFaint))
+                + U(T.SpaceLg);
+
+            var config = c.TelemetryConfig;
+            var samples = config?.samples;
+            var thresholds = config?.thresholds;
+            var rowH = U(56f);
+            var headerH = U(44f);
+            var inset = U(T.SpaceMd);
+            var rowCount = samples != null ? samples.Length : 0;
+            var tableH = inset + headerH + rowH * Mathf.Max(rowCount, 1) + inset;
+
+            var table = new Rect(x, y, w, tableH);
+            Fill(table, T.Surface, U(T.RadiusLg));
+            Stroke(table, T.Border, U(T.StrokeThin), U(T.RadiusLg));
+            Block(table);
+
+            var gridX = x + inset;
+            var gridW = w - inset * 2f;
+            var rowY = y + inset;
+
+            DrawQrTelemetryTableRow(
+                gridX, rowY, gridW, headerH,
+                "Status", "Temp. °C", "Pressão bar", "RPM",
+                T.InkSoft, header: true, zebra: false);
+            rowY += headerH;
+
+            if (samples == null || samples.Length == 0)
+            {
+                Label(
+                    new Rect(gridX, rowY, gridW, rowH),
+                    "Sem amostras no cenário.",
+                    Aligned(Colored(_body, T.InkFaint), TextAnchor.MiddleLeft));
+            }
+            else
+            {
+                for (var i = 0; i < samples.Length; i++)
+                {
+                    var sample = samples[i];
+                    if (sample == null) continue;
+                    var status = SafetyLensTelemetry.Evaluate(sample, thresholds);
+                    var statusName = SafetyLensTelemetry.NarrativeLabel(status);
+                    var statusColor = status == SafetyLensTelemetryStatus.Critical
+                        ? T.Danger
+                        : status == SafetyLensTelemetryStatus.Warning
+                            ? T.Brand
+                            : T.Success;
+
+                    DrawQrTelemetryTableRow(
+                        gridX, rowY, gridW, rowH,
+                        statusName,
+                        sample.temperature.ToString("F1", CultureInfo.InvariantCulture),
+                        sample.pressure.ToString("F2", CultureInfo.InvariantCulture),
+                        sample.rpm.ToString("F0", CultureInfo.InvariantCulture),
+                        statusColor,
+                        header: false,
+                        zebra: i % 2 == 1);
+                    rowY += rowH;
+                }
+            }
+
+            y = table.yMax + U(T.SpaceLg);
+            y += Paragraph(
+                    x, y, w,
+                    "Ao concluir, a sessão grava o status Perigoso (última linha) no CSV.",
+                    Colored(_caption, T.InkFaint))
+                + U(T.SpaceLg);
+
+            if (PrimaryButton(new Rect(x, y, w, U(T.ControlHeight)), "Concluir leitura"))
+                c.CompleteTelemetry();
+        }
+
+        /// <summary>
+        /// Uma linha da tabela QR com colunas fixas (Status | Temp | Pressão | RPM).
+        /// Números alinhados à direita; cabeçalho e dados usam a mesma grade.
+        /// </summary>
+        void DrawQrTelemetryTableRow(
+            float x,
+            float y,
+            float w,
+            float h,
+            string status,
+            string temp,
+            string pressure,
+            string rpm,
+            Color statusColor,
+            bool header,
+            bool zebra)
+        {
+            // Frações fixas — cabeçalho e células compartilham os mesmos retângulos.
+            const float statusFrac = 0.30f;
+            const float metricFrac = 0.233333f;
+            var statusW = w * statusFrac;
+            var metricW = w * metricFrac;
+
+            var rStatus = new Rect(x, y, statusW, h);
+            var rTemp = new Rect(x + statusW, y, metricW, h);
+            var rPress = new Rect(x + statusW + metricW, y, metricW, h);
+            var rRpm = new Rect(x + statusW + metricW * 2f, y, metricW, h);
+
+            if (header)
+                Fill(new Rect(x, y, w, h), T.SurfaceMuted, U(T.RadiusSm));
+            else if (zebra)
+                Fill(new Rect(x, y, w, h), T.SurfaceMuted, U(T.RadiusSm));
+
+            if (header)
+            {
+                Label(rStatus, status, Aligned(Colored(_captionStrong, T.InkSoft), TextAnchor.MiddleLeft));
+                Label(rTemp, temp, Aligned(Colored(_captionStrong, T.InkSoft), TextAnchor.MiddleRight));
+                Label(rPress, pressure, Aligned(Colored(_captionStrong, T.InkSoft), TextAnchor.MiddleRight));
+                Label(rRpm, rpm, Aligned(Colored(_captionStrong, T.InkSoft), TextAnchor.MiddleRight));
+                return;
+            }
+
+            var chipPadX = U(T.SpaceSm);
+            var chipH = U(28f);
+            var chipStyle = Colored(_captionStrong, statusColor);
+            var soft = statusColor == T.Danger
+                ? T.DangerSoft
+                : statusColor == T.Brand
+                    ? T.SurfaceMuted
+                    : T.SuccessSoft;
+            var chipW = Mathf.Min(rStatus.width - U(T.SpaceXs), MeasureWidth(status, chipStyle) + chipPadX * 2f);
+            var chip = new Rect(
+                rStatus.x,
+                rStatus.y + (h - chipH) * 0.5f,
+                chipW,
+                chipH);
+            Fill(chip, soft, chipH * 0.5f);
+            Label(chip, status, Centered(chipStyle));
+
+            Label(rTemp, temp, Aligned(Colored(_bodyStrong, T.Ink), TextAnchor.MiddleRight));
+            Label(rPress, pressure, Aligned(Colored(_bodyStrong, T.Ink), TextAnchor.MiddleRight));
+            Label(rRpm, rpm, Aligned(Colored(_bodyStrong, T.Ink), TextAnchor.MiddleRight));
         }
 
         void DrawResult()
