@@ -1,5 +1,17 @@
 # Changelog — SafetyLens
 
+## 1.5.0
+
+Caminho QR, primeira fatia da máquina:
+
+- Um reconhecimento estável do QR desliga a câmera e mostra um compressor no fundo escuro
+- Giro só na horizontal; os pontos ficam na superfície
+- A tabela (o que é / o que pode acontecer) abre só no toque da face virada para a pessoa
+- O marcador WL03 permanece no fluxo da ficha, inspeção, quiz e telemetria
+- Compressor do QR deixa de ser um bloco: tanque deitado, base, cabeçote com aletas, ventilador e tubo de saída
+- O compressor entra menor e com o centro do volume no meio da tela
+- O QR usa o FBX `Assets/Models/Motor/air-compressor.fbx` (CC0). Sem o prefab, volta às primitivas
+
 ## 1.4.2
 
 Dois caminhos de RA (marcador WL03 intacto; QR redesenhado):

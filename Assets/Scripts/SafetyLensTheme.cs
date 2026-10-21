@@ -130,6 +130,32 @@ namespace Facens.SafetyLens
         /// <summary>QR viewer: fundo sólido após o scan (sem feed da câmera).</summary>
         public static readonly Color QrViewerBackdrop = Ink;
 
+        /// <summary>Compressor do QR, no fundo escuro: corpo fosco, mais claro que o backdrop.</summary>
+        public static readonly Color MachineBody = Hex(0xB7C0CA);
+        /// <summary>Motor do compressor, um tom abaixo do corpo para separar os volumes.</summary>
+        public static readonly Color MachineMotor = Hex(0x7E8B99);
+        /// <summary>Tubo de saída, o volume mais claro para ler como peça à parte.</summary>
+        public static readonly Color MachinePipe = Hex(0xE4E8ED);
+        /// <summary>Base do compressor, mais escura que o tanque para o volume assentar.</summary>
+        public static readonly Color MachineSkid = Hex(0x3E4A57);
+
+        /// <summary>QR máquina: distância do pivô à câmera (metros).</summary>
+        public const float QrMachineDistance = 0.62f;
+        /// <summary>
+        /// Maior lado do compressor importado, em metros, na tela.
+        /// O FBX vem em tamanho real (cerca de 1 m) e estouraria o celular.
+        /// </summary>
+        public const float QrMachineFitSize = 0.32f;
+        /// <summary>
+        /// Escala do compressor no viewer. O modelo em metros é mais largo que o celular em pé;
+        /// sem isto ele estoura a largura da tela.
+        /// </summary>
+        public const float QrMachineScale = 0.46f;
+        /// <summary>QR máquina: graus por pixel no arraste horizontal.</summary>
+        public const float QrMachineYawSensitivity = 0.32f;
+        /// <summary>QR máquina: diâmetro da marca na superfície (metros).</summary>
+        public const float QrMachinePointSize = 0.04f;
+
         public const float SpaceXs = 4f;
         public const float SpaceSm = 8f;
         public const float SpaceMd = 12f;

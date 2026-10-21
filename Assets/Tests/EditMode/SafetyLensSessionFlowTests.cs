@@ -45,6 +45,18 @@ namespace Facens.SafetyLens.Tests
         }
 
         [Test]
+        public void Scanning_CanEnterQrMachine()
+        {
+            var flow = new SafetyLensSessionFlow();
+            Assert.IsFalse(flow.TryEnterQrMachine());
+            Assert.IsTrue(flow.TryEnterScanning());
+            Assert.IsTrue(flow.TryEnterQrMachine());
+            Assert.AreEqual(AppPhase.QrMachine, flow.Phase);
+            Assert.IsFalse(flow.TryEnterEquipmentBrief());
+            Assert.IsFalse(flow.TryEnterQuiz());
+        }
+
+        [Test]
         public void Scanning_CannotSkipBrief_ToRiskInspection()
         {
             var flow = new SafetyLensSessionFlow();

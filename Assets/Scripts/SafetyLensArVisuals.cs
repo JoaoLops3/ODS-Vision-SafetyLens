@@ -55,6 +55,7 @@ namespace Facens.SafetyLens
         public const string HelmetMaterialPath = "SafetyLens/Materials/HelmetLit";
         public const string FallbackMaterialPath = "SafetyLens/Materials/FallbackUnlit";
         public const string HelmetPrefabPath = "SafetyLens/Prefabs/Helmet";
+        public const string CompressorPrefabPath = "SafetyLens/Prefabs/AirCompressor";
 
         public static SafetyLensHazardVisual Create(SafetyLensHazard hazard, Transform parent)
         {

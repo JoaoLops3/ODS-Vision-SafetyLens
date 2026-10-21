@@ -137,6 +137,7 @@ namespace Facens.SafetyLens
             switch (_controller.Phase)
             {
                 case AppPhase.Identification: DrawHome(); break;
+                case AppPhase.QrMachine: DrawQrMachine(); break;
                 case AppPhase.Scanning:
                 case AppPhase.RiskInspection: DrawCamera(); break;
                 case AppPhase.EquipmentBrief: DrawEquipmentBrief(); break;
@@ -299,6 +300,78 @@ namespace Facens.SafetyLens
             }
 
             DrawCameraSheet(sa);
+        }
+
+        /// <summary>
+        /// Compressor do QR no fundo escuro. A tabela só existe depois do toque num ponto da face da frente.
+        /// </summary>
+        void DrawQrMachine()
+        {
+            var sa = SafeArea();
+            var c = _controller;
+            var pad = U(T.SpaceLg);
+            var top = sa.y + U(T.SpaceSm);
+
+            var close = new Rect(sa.x + pad, top, U(T.TouchMin), U(T.TouchMin));
+            Fill(close, T.Surface, close.height * 0.5f);
+            Label(close, "×", _glyph);
+            Block(close);
+            if (GUI.Button(close, GUIContent.none, _hitArea)) c.RestartSession();
+
+            var toastY = top + U(T.TouchMin) + U(T.SpaceMd);
+            DrawToast(sa, toastY);
+
+            if (!c.QrMachineHasPoint)
+            {
+                DrawQrMachineHint(sa);
+                return;
+            }
+
+            DrawQrMachineCard(sa);
+        }
+
+        void DrawQrMachineHint(Rect sa)
+        {
+            const string hint = "Gire o compressor. Toque no ponto da face à sua frente.";
+            var margin = U(T.SpaceMd);
+            var inner = U(T.SpaceLg);
+            var sheetW = sa.width - margin * 2f;
+            var w = sheetW - inner * 2f;
+            var textH = Measure(hint, _body, w);
+            var h = inner * 2f + textH;
+            var sheet = new Rect(sa.x + margin, sa.yMax - margin - h, sheetW, h);
+            Fill(sheet, T.Surface, U(T.RadiusLg));
+            Block(sheet);
+            Paragraph(sheet.x + inner, sheet.y + inner, w, hint, _body);
+        }
+
+        void DrawQrMachineCard(Rect sa)
+        {
+            var c = _controller;
+            var margin = U(T.SpaceMd);
+            var inner = U(T.SpaceLg);
+            var sheetW = sa.width - margin * 2f;
+            var w = sheetW - inner * 2f;
+            var labelStyle = _captionStrong;
+            var valueStyle = _bodyStrong;
+
+            var h = inner;
+            h += U(18f) + U(T.SpaceXs) + Measure(c.QrMachineWhatItIs, valueStyle, w) + U(T.SpaceMd);
+            h += U(18f) + U(T.SpaceXs) + Measure(c.QrMachineWhatCanHappen, valueStyle, w);
+            h += inner;
+
+            var sheet = new Rect(sa.x + margin, sa.yMax - margin - h, sheetW, h);
+            Fill(sheet, T.Surface, U(T.RadiusLg));
+            Block(sheet);
+
+            var x = sheet.x + inner;
+            var y = sheet.y + inner;
+            Label(new Rect(x, y, w, U(18f)), "O que é", labelStyle);
+            y += U(18f) + U(T.SpaceXs);
+            y += Paragraph(x, y, w, c.QrMachineWhatItIs, valueStyle) + U(T.SpaceMd);
+            Label(new Rect(x, y, w, U(18f)), "O que pode acontecer", labelStyle);
+            y += U(18f) + U(T.SpaceXs);
+            Paragraph(x, y, w, c.QrMachineWhatCanHappen, valueStyle);
         }
 
         /// <summary>

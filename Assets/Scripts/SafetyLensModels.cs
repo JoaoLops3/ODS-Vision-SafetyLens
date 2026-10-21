@@ -7,6 +7,8 @@ namespace Facens.SafetyLens
     {
         Identification,
         Scanning,
+        /// <summary>QR: scan único, depois o compressor no fundo escuro. O WL03 não entra aqui.</summary>
+        QrMachine,
         /// <summary>Ficha do equipamento após o primeiro tracking; o relógio RF04 já corre.</summary>
         EquipmentBrief,
         RiskInspection,

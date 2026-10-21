@@ -26,6 +26,14 @@ namespace Facens.SafetyLens
             return true;
         }
 
+        /// <summary>Scanning → QrMachine no primeiro tracking estável do QR. O WL03 não usa isto.</summary>
+        public bool TryEnterQrMachine()
+        {
+            if (Phase != AppPhase.Scanning) return false;
+            Phase = AppPhase.QrMachine;
+            return true;
+        }
+
         /// <summary>Scanning → EquipmentBrief no primeiro tracking.</summary>
         public bool TryEnterEquipmentBrief()
         {

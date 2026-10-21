@@ -19,6 +19,9 @@ namespace Facens.SafetyLens.Editor
         const string PrefabsFolder = "Assets/Resources/SafetyLens/Prefabs";
         const string HelmetFbxPath = "Assets/Models/EPI/HardHat.fbx";
         const string HelmetPrefabAssetPath = PrefabsFolder + "/Helmet.prefab";
+        const string CompressorFbxPath = "Assets/Models/Motor/air-compressor.fbx";
+        const string CompressorPrefabAssetPath = PrefabsFolder + "/AirCompressor.prefab";
+        const string CompressorTextureFolder = "Assets/Models/Motor/Textures";
         const string LightName = "SafetyLens Key Light";
 
         public static void EnsureAll(string scenePath)
@@ -26,6 +29,7 @@ namespace Facens.SafetyLens.Editor
             EnsureMaterials();
             // Regenera: ArHelmetWidth muda com o layout HUD e o FBX não pode ficar com tamanho velho.
             EnsureHelmetPrefab(true);
+            EnsureCompressorPrefab();
             EnsureSceneLighting(scenePath);
         }
 
@@ -192,6 +196,94 @@ namespace Facens.SafetyLens.Editor
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        /// <summary>
+        /// Gera o prefab do compressor a partir do FBX, mantendo a textura importada.
+        /// Trocar o material por uma cor chapada jogaria fora o modelo realista.
+        /// </summary>
+        public static void EnsureCompressorPrefab()
+        {
+            var fbx = PrepareCompressorImport();
+            if (fbx == null)
+            {
+                Debug.LogWarning($"[SafetyLens] {CompressorFbxPath} nao encontrado; o QR usa o compressor de primitivas.");
+                return;
+            }
+
+            Directory.CreateDirectory(PrefabsFolder);
+            var root = new GameObject("AirCompressor");
+            try
+            {
+                var model = (GameObject)PrefabUtility.InstantiatePrefab(fbx);
+                PrefabUtility.UnpackPrefabInstance(model, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
+                model.name = "Mesh";
+                model.transform.SetParent(root.transform, false);
+                model.transform.localPosition = Vector3.zero;
+                model.transform.localRotation = Quaternion.identity;
+                model.transform.localScale = Vector3.one;
+                SafetyLensArVisuals.StripImportedSceneGadgets(model);
+
+                var renderers = model.GetComponentsInChildren<Renderer>(true);
+                if (renderers.Length == 0)
+                {
+                    Debug.LogWarning("[SafetyLens] FBX do compressor sem renderers; prefab nao gerado.");
+                    return;
+                }
+
+                for (var i = 0; i < renderers.Length; i++)
+                {
+                    renderers[i].shadowCastingMode = ShadowCastingMode.Off;
+                    renderers[i].receiveShadows = false;
+                    renderers[i].lightProbeUsage = LightProbeUsage.Off;
+                    renderers[i].reflectionProbeUsage = ReflectionProbeUsage.Off;
+                    var shaderName = renderers[i].sharedMaterial != null ? renderers[i].sharedMaterial.shader.name : "(sem material)";
+                    Debug.Log($"[SafetyLens] Compressor renderer '{renderers[i].name}' shader '{shaderName}'.");
+                }
+
+                foreach (var oldCollider in root.GetComponentsInChildren<Collider>(true))
+                    Object.DestroyImmediate(oldCollider);
+
+                PrefabUtility.SaveAsPrefabAsset(root, CompressorPrefabAssetPath, out var ok);
+                if (ok)
+                    Debug.Log($"[SafetyLens] Prefab do compressor gerado em {CompressorPrefabAssetPath}.");
+                else
+                    Debug.LogError("[SafetyLens] Falha ao salvar o prefab do compressor.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        /// <summary>
+        /// Extrai a textura embutida e importa o material para fora do FBX,
+        /// senão o player iOS não leva a cor do tanque.
+        /// </summary>
+        static GameObject PrepareCompressorImport()
+        {
+            var importer = AssetImporter.GetAtPath(CompressorFbxPath) as ModelImporter;
+            if (importer == null) return null;
+
+            Directory.CreateDirectory(CompressorTextureFolder);
+            importer.importCameras = false;
+            importer.importLights = false;
+            importer.animationType = ModelImporterAnimationType.None;
+            // As marcas leem os vértices para sentar na casca. Sem isto o player devolve a malha vazia.
+            importer.isReadable = true;
+            importer.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
+            importer.materialLocation = ModelImporterMaterialLocation.External;
+            importer.materialName = ModelImporterMaterialName.BasedOnMaterialName;
+            importer.materialSearch = ModelImporterMaterialSearch.Local;
+            importer.ExtractTextures(CompressorTextureFolder);
+            importer.SaveAndReimport();
+            importer = AssetImporter.GetAtPath(CompressorFbxPath) as ModelImporter;
+            if (importer == null) return null;
+            importer.SearchAndRemapMaterials(
+                ModelImporterMaterialName.BasedOnMaterialName,
+                ModelImporterMaterialSearch.Everywhere);
+            importer.SaveAndReimport();
+            return AssetDatabase.LoadAssetAtPath<GameObject>(CompressorFbxPath);
         }
 
         /// <summary>

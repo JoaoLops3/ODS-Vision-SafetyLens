@@ -29,6 +29,7 @@ namespace Facens.SafetyLens
         readonly SafetyLensPerformanceProbe _perf = new SafetyLensPerformanceProbe();
         readonly SafetyLensTelemetrySession _telemetry = new SafetyLensTelemetrySession();
         readonly SafetyLensArContentService _content = new SafetyLensArContentService();
+        readonly SafetyLensQrMachineView _machine = new SafetyLensQrMachineView();
 
         ARTrackedImageManager _imageManager;
         SafetyLensArTrackingService _tracking;
@@ -67,6 +68,15 @@ namespace Facens.SafetyLens
 
         /// <summary>Viewer 3D do QR ativo (models na frente da câmera, orbit com o dedo).</summary>
         public bool IsQrViewerActive => _content != null && _content.IsQrViewerActive;
+
+        /// <summary>True quando o toque abriu a tabela de um ponto do compressor.</summary>
+        public bool QrMachineHasPoint => Phase == AppPhase.QrMachine && _machine.Selected != null;
+
+        /// <summary>Primeira linha da tabela do ponto aberto. Vazio sem seleção.</summary>
+        public string QrMachineWhatItIs => _machine.Selected != null ? _machine.Selected.WhatItIs : string.Empty;
+
+        /// <summary>Segunda linha da tabela do ponto aberto. Vazio sem seleção.</summary>
+        public string QrMachineWhatCanHappen => _machine.Selected != null ? _machine.Selected.WhatCanHappen : string.Empty;
 
         /// <summary>Aviso persistente em Limited/None dentro do prazo de graça. Null fora de Unstable.</summary>
         public string TargetStatusMessage => _tracking?.TargetStatusMessage;
@@ -327,6 +337,8 @@ namespace Facens.SafetyLens
             var image = _tracking.TrackedImage;
             if (image == null) return;
 
+            if (TryOpenQrMachine()) return;
+
             _clock.MarkInspectionStarted(Time.realtimeSinceStartup, DateTime.UtcNow);
             _timeline.MarkMarkerFound(Time.realtimeSinceStartup);
             _content.Ensure(_scenario);
@@ -358,8 +370,33 @@ namespace Facens.SafetyLens
             }
         }
 
+        /// <summary>
+        /// QR: um tracking estável desliga a câmera e mostra o compressor.
+        /// Chamadas seguintes no mesmo scan não reconstroem a máquina.
+        /// </summary>
+        bool TryOpenQrMachine()
+        {
+            if (!IsQrSession) return false;
+            if (Phase == AppPhase.QrMachine) return true;
+            if (Phase != AppPhase.Scanning) return false;
+
+            var camera = _content.ResolveArCamera();
+            if (camera == null || !_flow.TryEnterQrMachine()) return false;
+
+            _tracking.MarkEverFound();
+            _machine.Show(camera);
+            _tracking.SetCameraFeedVisible(false);
+            _qrOrbitDragging = false;
+            ShowFeedback("QR reconhecido", false);
+            StatusMessage = string.Empty;
+            return true;
+        }
+
         void OnMarkerLost()
         {
+            // A máquina do QR já não depende do código. Perder o tracking não apaga o compressor.
+            if (Phase == AppPhase.QrMachine) return;
+
             // Viewer QR já desacoplou do Image Target — perda do QR na tela não esconde os models.
             if (IsQrSession && Phase == AppPhase.RiskInspection && IsQrViewerActive)
                 return;
@@ -445,6 +482,14 @@ namespace Facens.SafetyLens
                     StatusMessage = ArAvailabilityMessage;
             }
 
+            if (Phase == AppPhase.QrMachine)
+            {
+                _machine.RefreshFacing();
+                if (Input.touchCount == 1)
+                    HandleQrMachineTouch(Input.GetTouch(0));
+                return;
+            }
+
             if (Phase != AppPhase.RiskInspection || Input.touchCount != 1) return;
 
             if (IsQrSession && IsQrViewerActive)
@@ -460,6 +505,49 @@ namespace Facens.SafetyLens
                 return;
 
             TryPickHazardAt(touch.position);
+        }
+
+        /// <summary>QR máquina: arraste horizontal gira; toque curto abre a tabela do ponto da frente.</summary>
+        void HandleQrMachineTouch(Touch touch)
+        {
+            if (SafetyLensStatusOverlay.IsTouchOverOverlay(touch.position))
+            {
+                _qrOrbitDragging = false;
+                return;
+            }
+
+            switch (touch.phase)
+            {
+                case TouchPhase.Began:
+                    _qrOrbitDragging = false;
+                    _qrOrbitStartPos = touch.position;
+                    _qrOrbitLastPos = touch.position;
+                    break;
+
+                case TouchPhase.Moved:
+                case TouchPhase.Stationary:
+                {
+                    if (!_qrOrbitDragging
+                        && Vector2.Distance(touch.position, _qrOrbitStartPos)
+                            >= SafetyLensTheme.QrViewerDragThresholdPx)
+                        _qrOrbitDragging = true;
+
+                    if (!_qrOrbitDragging) break;
+
+                    var delta = touch.position - _qrOrbitLastPos;
+                    _qrOrbitLastPos = touch.position;
+                    _machine.ApplyYaw(-delta.x * SafetyLensTheme.QrMachineYawSensitivity);
+                    _machine.RefreshFacing();
+                    break;
+                }
+
+                case TouchPhase.Ended:
+                case TouchPhase.Canceled:
+                    if (!_qrOrbitDragging)
+                        _machine.TrySelect(touch.position);
+                    _qrOrbitDragging = false;
+                    break;
+            }
         }
 
         /// <summary>QR: arraste = orbit; toque curto = seleção RF03. Ignora toques na UI IMGUI.</summary>
@@ -721,6 +809,7 @@ namespace Facens.SafetyLens
         /// <summary>Destroi overlays 3D e volta à identificação.</summary>
         public void RestartSession()
         {
+            _machine.Clear();
             _content.DestroyContent();
             _tracking.SetCameraFeedVisible(true);
             _tracking.ResetLock();
@@ -833,6 +922,7 @@ namespace Facens.SafetyLens
 
         void OnDestroy()
         {
+            _machine.Clear();
             _content.DestroyContent();
         }
     }
