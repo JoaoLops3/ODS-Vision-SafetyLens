@@ -49,7 +49,7 @@ namespace Facens.SafetyLens
                 _yaw.localScale = Vector3.one * SafetyLensTheme.QrMachineScale;
                 BuildCompressor();
                 foreach (var spot in SafetyLensQrMachineCatalog.CreateSpots())
-                    AddPoint(spot, spot.LocalPosition);
+                    AddPoint(spot, spot.LocalPosition, spot.LocalOutwardNormal);
             }
 
             // A origem da malha é o chão da base. Sem este passo o corpo fica acima do meio da tela.
@@ -275,93 +275,170 @@ namespace Facens.SafetyLens
             _yaw.localScale = Vector3.one * (SafetyLensTheme.QrMachineFitSize / longest);
         }
 
+        readonly struct ShellSample
+        {
+            public ShellSample(Vector3 position, Vector3 normal)
+            {
+                Position = position;
+                Normal = normal;
+            }
+
+            public Vector3 Position { get; }
+            public Vector3 Normal { get; }
+        }
+
         /// <summary>
-        /// Três marcas, uma em cada face do catálogo. A posição é a casca da malha
-        /// que aponta para aquele lado — não o centro da caixa, que cai no vazio.
+        /// Três marcas em peças de verdade: saída de ar na frente, tampa no extremo sem roda
+        /// e grade do motor atrás. A base fica de fora — a roda tem normal para todo lado
+        /// e puxava a média para o pneu.
         /// </summary>
         void AddPointsOnSurface()
         {
+            var samples = CollectShell();
             var bounds = BoundsInYawSpace();
+            var wheelSign = WheelEndSign(samples, bounds);
             var spots = SafetyLensQrMachineCatalog.CreateSpots();
             for (var i = 0; i < spots.Length; i++)
-                AddPoint(spots[i], SurfacePoint(spots[i].LocalOutwardNormal, bounds));
+            {
+                var normal = FaceNormalForSpot(i, wheelSign);
+                AddPoint(spots[i], SurfacePointOnPart(samples, bounds, i, normal, wheelSign), normal);
+            }
         }
 
-        Vector3 SurfacePoint(Vector3 localOutward, Bounds localBounds)
+        /// <summary>0 saída à frente, 1 tampa no lado oposto às rodas, 2 grade atrás.</summary>
+        static Vector3 FaceNormalForSpot(int index, float wheelSign)
         {
-            var normal = localOutward.sqrMagnitude < 1e-8f ? Vector3.back : localOutward.normalized;
-            var lift = PointLiftInYawSpace();
-            if (TryAverageOuterShell(normal, localBounds, out var onShell))
-                return onShell + normal * lift;
-
-            return localBounds.center + Vector3.Scale(normal, localBounds.extents) + normal * lift;
+            if (index == 1) return Vector3.right * -wheelSign;
+            if (index == 2) return Vector3.forward;
+            return Vector3.back;
         }
 
-        /// <summary>
-        /// Média dos vértices mais externos cuja normal aponta para o mesmo lado da marca.
-        /// </summary>
-        bool TryAverageOuterShell(Vector3 yawNormal, Bounds localBounds, out Vector3 center)
+        Vector3 SurfacePointOnPart(
+            System.Collections.Generic.List<ShellSample> samples,
+            Bounds bounds,
+            int index,
+            Vector3 outward,
+            float wheelSign)
+        {
+            var lift = PointLiftInYawSpace();
+            var min = HeightMark(bounds, index == 1 ? 0.22f : index == 2 ? 0.52f : 0.38f);
+            var max = HeightMark(bounds, index == 1 ? 0.48f : index == 2 ? 0.82f : 0.74f);
+            if (TryAveragePart(samples, bounds, outward, min, max, wheelSign, true, out var onPart))
+                return onPart + outward * lift;
+            if (TryAveragePart(samples, bounds, outward, min, max, wheelSign, false, out onPart))
+                return onPart + outward * lift;
+
+            return bounds.center + Vector3.Scale(outward, bounds.extents) + outward * lift;
+        }
+
+        static float HeightMark(Bounds bounds, float fraction)
+        {
+            return bounds.min.y + bounds.size.y * fraction;
+        }
+
+        /// <summary>Lado do tanque onde os vértices baixos se concentram. +1 é +X.</summary>
+        static float WheelEndSign(System.Collections.Generic.List<ShellSample> samples, Bounds bounds)
+        {
+            var floor = HeightMark(bounds, 0.22f);
+            var sum = 0f;
+            var count = 0;
+            for (var i = 0; i < samples.Count; i++)
+            {
+                if (samples[i].Position.y > floor) continue;
+                sum += samples[i].Position.x;
+                count++;
+            }
+
+            if (count == 0) return 1f;
+            return (sum / count) >= bounds.center.x ? 1f : -1f;
+        }
+
+        bool TryAveragePart(
+            System.Collections.Generic.List<ShellSample> samples,
+            Bounds bounds,
+            Vector3 outward,
+            float yMin,
+            float yMax,
+            float wheelSign,
+            bool avoidWheelEnd,
+            out Vector3 center)
         {
             center = Vector3.zero;
-            var filters = _yaw.GetComponentsInChildren<MeshFilter>(true);
+            outward = outward.sqrMagnitude < 1e-8f ? Vector3.back : outward.normalized;
             var maxProj = float.NegativeInfinity;
             var any = false;
-
-            for (var i = 0; i < filters.Length; i++)
+            for (var i = 0; i < samples.Count; i++)
             {
-                var mesh = filters[i].sharedMesh;
-                if (mesh == null || !mesh.isReadable) continue;
-                var vertices = mesh.vertices;
-                var normals = mesh.normals;
-                if (normals == null || normals.Length != vertices.Length) continue;
-
-                var toYaw = _yaw.worldToLocalMatrix * filters[i].transform.localToWorldMatrix;
-                for (var v = 0; v < vertices.Length; v++)
-                {
-                    var n = toYaw.MultiplyVector(normals[v]);
-                    if (n.sqrMagnitude < 1e-8f) continue;
-                    n.Normalize();
-                    if (Vector3.Dot(n, yawNormal) < 0.6f) continue;
-
-                    var proj = Vector3.Dot(toYaw.MultiplyPoint3x4(vertices[v]), yawNormal);
-                    if (proj > maxProj) maxProj = proj;
-                    any = true;
-                }
+                if (!AcceptsPartVertex(samples[i], bounds, outward, yMin, yMax, wheelSign, avoidWheelEnd))
+                    continue;
+                var proj = Vector3.Dot(samples[i].Position, outward);
+                if (proj > maxProj) maxProj = proj;
+                any = true;
             }
 
             if (!any) return false;
 
-            var span = Mathf.Max(localBounds.size.x, localBounds.size.y, localBounds.size.z);
-            var band = Mathf.Max(span * 0.05f, 1e-4f);
+            var band = Mathf.Max(bounds.size.magnitude * 0.04f, 1e-4f);
             var sum = Vector3.zero;
             var count = 0;
-
-            for (var i = 0; i < filters.Length; i++)
+            for (var i = 0; i < samples.Count; i++)
             {
-                var mesh = filters[i].sharedMesh;
-                if (mesh == null || !mesh.isReadable) continue;
-                var vertices = mesh.vertices;
-                var normals = mesh.normals;
-                if (normals == null || normals.Length != vertices.Length) continue;
-
-                var toYaw = _yaw.worldToLocalMatrix * filters[i].transform.localToWorldMatrix;
-                for (var v = 0; v < vertices.Length; v++)
-                {
-                    var n = toYaw.MultiplyVector(normals[v]);
-                    if (n.sqrMagnitude < 1e-8f) continue;
-                    n.Normalize();
-                    if (Vector3.Dot(n, yawNormal) < 0.6f) continue;
-
-                    var point = toYaw.MultiplyPoint3x4(vertices[v]);
-                    if (Vector3.Dot(point, yawNormal) < maxProj - band) continue;
-                    sum += point;
-                    count++;
-                }
+                var sample = samples[i];
+                if (!AcceptsPartVertex(sample, bounds, outward, yMin, yMax, wheelSign, avoidWheelEnd))
+                    continue;
+                if (Vector3.Dot(sample.Position, outward) < maxProj - band) continue;
+                sum += sample.Position;
+                count++;
             }
 
             if (count == 0) return false;
             center = sum / count;
             return true;
+        }
+
+        static bool AcceptsPartVertex(
+            ShellSample sample,
+            Bounds bounds,
+            Vector3 outward,
+            float yMin,
+            float yMax,
+            float wheelSign,
+            bool avoidWheelEnd)
+        {
+            var position = sample.Position;
+            if (position.y < yMin || position.y > yMax) return false;
+            if (sample.Normal.y > 0.65f) return false;
+            if (Vector3.Dot(sample.Normal, outward) < 0.4f) return false;
+            if (!avoidWheelEnd) return true;
+
+            var onWheelEnd = wheelSign > 0f
+                ? position.x > bounds.center.x + bounds.size.x * 0.18f
+                : position.x < bounds.center.x - bounds.size.x * 0.18f;
+            return !onWheelEnd;
+        }
+
+        System.Collections.Generic.List<ShellSample> CollectShell()
+        {
+            var samples = new System.Collections.Generic.List<ShellSample>(16000);
+            var filters = _yaw.GetComponentsInChildren<MeshFilter>(true);
+            for (var i = 0; i < filters.Length; i++)
+            {
+                var mesh = filters[i].sharedMesh;
+                if (mesh == null || !mesh.isReadable) continue;
+                var vertices = mesh.vertices;
+                var normals = mesh.normals;
+                if (normals == null || normals.Length != vertices.Length) continue;
+
+                var toYaw = _yaw.worldToLocalMatrix * filters[i].transform.localToWorldMatrix;
+                for (var v = 0; v < vertices.Length; v++)
+                {
+                    var normal = toYaw.MultiplyVector(normals[v]);
+                    if (normal.sqrMagnitude < 1e-8f) continue;
+                    samples.Add(new ShellSample(toYaw.MultiplyPoint3x4(vertices[v]), normal.normalized));
+                }
+            }
+
+            return samples;
         }
 
         float PointLiftInYawSpace()
@@ -477,7 +554,7 @@ namespace Facens.SafetyLens
             Part("Foot", PrimitiveType.Cube, position, new Vector3(0.04f, 0.016f, 0.04f), Quaternion.identity, color);
         }
 
-        void AddPoint(SafetyLensQrMachineSpot spot, Vector3 localPosition)
+        void AddPoint(SafetyLensQrMachineSpot spot, Vector3 localPosition, Vector3 outwardNormal)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             go.name = "QrMachinePoint";
@@ -489,7 +566,9 @@ namespace Facens.SafetyLens
             var point = go.AddComponent<SafetyLensQrMachinePoint>();
             point.WhatItIs = spot.WhatItIs;
             point.WhatCanHappen = spot.WhatCanHappen;
-            point.LocalOutwardNormal = spot.LocalOutwardNormal;
+            point.LocalOutwardNormal = outwardNormal.sqrMagnitude < 1e-8f
+                ? spot.LocalOutwardNormal
+                : outwardNormal.normalized;
 
             var renderer = go.GetComponent<Renderer>();
             var material = CreateUnlit(SafetyLensTheme.Brand);

@@ -11,6 +11,7 @@ Caminho QR, primeira fatia da máquina:
 - Compressor do QR deixa de ser um bloco: tanque deitado, base, cabeçote com aletas, ventilador e tubo de saída
 - O compressor entra menor e com o centro do volume no meio da tela
 - O QR usa o FBX `Assets/Models/Motor/air-compressor.fbx` (CC0). Sem o prefab, volta às primitivas
+- As marcas do compressor ficam na saída de ar, na tampa sem roda e na grade do motor, fora dos pneus
 
 ## 1.4.2
 
