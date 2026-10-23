@@ -288,9 +288,8 @@ namespace Facens.SafetyLens
         }
 
         /// <summary>
-        /// Três marcas em peças de verdade: saída de ar na frente, tampa no extremo sem roda
-        /// e grade do motor atrás. A base fica de fora — a roda tem normal para todo lado
-        /// e puxava a média para o pneu.
+        /// Tampa no extremo sem roda. A base fica de fora —
+        /// a roda tem normal para todo lado e puxava a média para o pneu.
         /// </summary>
         void AddPointsOnSurface()
         {
@@ -300,29 +299,192 @@ namespace Facens.SafetyLens
             var spots = SafetyLensQrMachineCatalog.CreateSpots();
             for (var i = 0; i < spots.Length; i++)
             {
-                var normal = FaceNormalForSpot(i, wheelSign);
-                AddPoint(spots[i], SurfacePointOnPart(samples, bounds, i, normal, wheelSign), normal);
+                var sideCap = Mathf.Abs(spots[i].LocalOutwardNormal.x) > 0.5f;
+                var normal = sideCap ? Vector3.right * -wheelSign : Vector3.back;
+                AddPoint(spots[i], SurfacePointOnPart(samples, bounds, sideCap, normal, wheelSign), normal);
             }
+
+            if (TryGaugePoint(out var gaugePosition, out var gaugeNormal))
+                AddPoint(SafetyLensQrMachineCatalog.GaugeSpot(), gaugePosition, gaugeNormal);
+
+            if (TryAirOutletPoint(out var outletPosition, out var outletNormal))
+                AddPoint(SafetyLensQrMachineCatalog.AirOutletSpot(), outletPosition, outletNormal);
+
+            if (TryMotorPoint(out var motorPosition, out var motorNormal))
+                AddPoint(SafetyLensQrMachineCatalog.MotorSpot(), motorPosition, motorNormal);
         }
 
-        /// <summary>0 saída à frente, 1 tampa no lado oposto às rodas, 2 grade atrás.</summary>
-        static Vector3 FaceNormalForSpot(int index, float wheelSign)
+        /// <summary>
+        /// Os dois mostradores brancos do atlas. O ponto fica no meio deles, um pouco para fora da face.
+        /// </summary>
+        bool TryGaugePoint(out Vector3 position, out Vector3 normal)
         {
-            if (index == 1) return Vector3.right * -wheelSign;
-            if (index == 2) return Vector3.forward;
-            return Vector3.back;
+            position = Vector3.zero;
+            normal = Vector3.back;
+            var sumPosition = Vector3.zero;
+            var sumNormal = Vector3.zero;
+            var count = 0;
+            var filters = _yaw.GetComponentsInChildren<MeshFilter>(true);
+            for (var i = 0; i < filters.Length; i++)
+            {
+                var mesh = filters[i].sharedMesh;
+                if (mesh == null || !mesh.isReadable) continue;
+                var uvs = mesh.uv;
+                var vertices = mesh.vertices;
+                var normals = mesh.normals;
+                if (uvs == null || uvs.Length != vertices.Length || normals == null || normals.Length != vertices.Length)
+                    continue;
+
+                var toYaw = _yaw.worldToLocalMatrix * filters[i].transform.localToWorldMatrix;
+                for (var v = 0; v < vertices.Length; v++)
+                {
+                    if (!IsGaugeDial(uvs[v])) continue;
+                    sumPosition += toYaw.MultiplyPoint3x4(vertices[v]);
+                    var n = toYaw.MultiplyVector(normals[v]);
+                    if (n.sqrMagnitude > 1e-8f) sumNormal += n.normalized;
+                    count++;
+                }
+            }
+
+            if (count < 8) return false;
+
+            var outward = sumNormal.sqrMagnitude < 1e-8f ? Vector3.back : sumNormal.normalized;
+            outward.y = 0f;
+            if (outward.sqrMagnitude < 1e-8f) outward = Vector3.back;
+            normal = outward.normalized;
+            position = sumPosition / count + normal * PointLiftInYawSpace();
+            return true;
+        }
+
+        /// <summary>
+        /// A casca de cima da mangueira amarela. O normal de toque fica na horizontal,
+        /// senão o giro em Y nunca vira essa face para a câmera.
+        /// A caixa está em metros do FBX em pé. Multiplicar pela escala da tela
+        /// jogava a mangueira para fora da caixa e o ponto não nascia.
+        /// </summary>
+        bool TryAirOutletPoint(out Vector3 position, out Vector3 normal)
+        {
+            position = Vector3.zero;
+            normal = Vector3.left;
+
+            var sumPosition = Vector3.zero;
+            var sumNormal = Vector3.zero;
+            var count = 0;
+            var filters = _yaw.GetComponentsInChildren<MeshFilter>(true);
+            for (var i = 0; i < filters.Length; i++)
+            {
+                var mesh = filters[i].sharedMesh;
+                if (mesh == null || !mesh.isReadable) continue;
+                var vertices = mesh.vertices;
+                var normals = mesh.normals;
+                if (normals == null || normals.Length != vertices.Length) continue;
+
+                var toYaw = _yaw.worldToLocalMatrix * filters[i].transform.localToWorldMatrix;
+                for (var v = 0; v < vertices.Length; v++)
+                {
+                    var yawPoint = toYaw.MultiplyPoint3x4(vertices[v]);
+                    if (!IsAirOutlet(yawPoint)) continue;
+                    var n = toYaw.MultiplyVector(normals[v]);
+                    if (n.sqrMagnitude < 1e-8f || n.normalized.y < 0.35f) continue;
+                    sumPosition += yawPoint;
+                    sumNormal += n.normalized;
+                    count++;
+                }
+            }
+
+            if (count < 8 || sumNormal.sqrMagnitude < 1e-8f) return false;
+
+            var skin = sumNormal.normalized;
+            var facing = new Vector3(skin.x, 0f, skin.z);
+            if (facing.sqrMagnitude < 1e-6f) facing = Vector3.left;
+            normal = facing.normalized;
+            position = sumPosition / count + skin * PointLiftInYawSpace();
+            return true;
+        }
+
+        /// <summary>
+        /// O disco cinza das faixas, acima do tanque. A face que olha para fora é a +X.
+        /// A caixa está em metros do FBX em pé. O yaw já cancela a escala da tela,
+        /// então multiplicar de novo jogava o disco para fora da caixa e o ponto sumia.
+        /// </summary>
+        bool TryMotorPoint(out Vector3 position, out Vector3 normal)
+        {
+            position = Vector3.zero;
+            normal = Vector3.right;
+
+            var sumPosition = Vector3.zero;
+            var sumNormal = Vector3.zero;
+            var count = 0;
+            var filters = _yaw.GetComponentsInChildren<MeshFilter>(true);
+            for (var i = 0; i < filters.Length; i++)
+            {
+                var mesh = filters[i].sharedMesh;
+                if (mesh == null || !mesh.isReadable) continue;
+                var vertices = mesh.vertices;
+                var normals = mesh.normals;
+                if (normals == null || normals.Length != vertices.Length) continue;
+
+                var toYaw = _yaw.worldToLocalMatrix * filters[i].transform.localToWorldMatrix;
+                for (var v = 0; v < vertices.Length; v++)
+                {
+                    var yawPoint = toYaw.MultiplyPoint3x4(vertices[v]);
+                    if (!IsMotorDisc(yawPoint)) continue;
+                    var n = toYaw.MultiplyVector(normals[v]);
+                    if (n.sqrMagnitude < 1e-8f || n.normalized.x < 0.55f) continue;
+                    sumPosition += yawPoint;
+                    sumNormal += n.normalized;
+                    count++;
+                }
+            }
+
+            if (count < 8 || sumNormal.sqrMagnitude < 1e-8f) return false;
+
+            var skin = sumNormal.normalized;
+            var facing = new Vector3(skin.x, 0f, skin.z);
+            if (facing.sqrMagnitude < 1e-6f) facing = Vector3.right;
+            normal = facing.normalized;
+            position = sumPosition / count + normal * PointLiftInYawSpace();
+            return true;
+        }
+
+        /// <summary>
+        /// Face do disco com anéis, no espaço em pé do FBX. A malha fica numa lâmina em x ≈ 0,357;
+        /// o limite antigo começava em 0,36 e deixava essa face de fora.
+        /// </summary>
+        static bool IsMotorDisc(Vector3 upright)
+        {
+            return upright.x >= 0.34f && upright.x <= 0.40f
+                && upright.y >= 0.60f && upright.y <= 0.75f
+                && upright.z >= -0.09f && upright.z <= 0.06f;
+        }
+
+        /// <summary>Trecho da mangueira no alto da bomba, no espaço em pé do FBX.</summary>
+        static bool IsAirOutlet(Vector3 upright)
+        {
+            return upright.x >= -0.22f && upright.x <= -0.08f
+                && upright.y >= 0.76f && upright.y <= 0.87f
+                && upright.z >= -0.045f && upright.z <= 0.05f;
+        }
+
+        /// <summary>Os dois círculos com ponteiro no topo do atlas de cor.</summary>
+        static bool IsGaugeDial(Vector2 uv)
+        {
+            if (uv.y < 0.94f || uv.y > 0.985f) return false;
+            var left = uv.x >= 0.238f && uv.x <= 0.276f;
+            var right = uv.x >= 0.287f && uv.x <= 0.326f;
+            return left || right;
         }
 
         Vector3 SurfacePointOnPart(
             System.Collections.Generic.List<ShellSample> samples,
             Bounds bounds,
-            int index,
+            bool sideCap,
             Vector3 outward,
             float wheelSign)
         {
             var lift = PointLiftInYawSpace();
-            var min = HeightMark(bounds, index == 1 ? 0.22f : index == 2 ? 0.52f : 0.38f);
-            var max = HeightMark(bounds, index == 1 ? 0.48f : index == 2 ? 0.82f : 0.74f);
+            var min = HeightMark(bounds, sideCap ? 0.22f : 0.38f);
+            var max = HeightMark(bounds, sideCap ? 0.48f : 0.74f);
             if (TryAveragePart(samples, bounds, outward, min, max, wheelSign, true, out var onPart))
                 return onPart + outward * lift;
             if (TryAveragePart(samples, bounds, outward, min, max, wheelSign, false, out onPart))

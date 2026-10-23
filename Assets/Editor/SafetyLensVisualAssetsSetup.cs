@@ -332,6 +332,7 @@ namespace Facens.SafetyLens.Editor
 
             if (openedHere) EditorSceneManager.CloseScene(scene, true);
         }
+
     }
 }
 #endif

@@ -355,9 +355,13 @@ namespace Facens.SafetyLens
             var labelStyle = _captionStrong;
             var valueStyle = _bodyStrong;
 
+            var happen = c.QrMachineWhatCanHappen;
+            var hasHappen = !string.IsNullOrWhiteSpace(happen);
+
             var h = inner;
-            h += U(18f) + U(T.SpaceXs) + Measure(c.QrMachineWhatItIs, valueStyle, w) + U(T.SpaceMd);
-            h += U(18f) + U(T.SpaceXs) + Measure(c.QrMachineWhatCanHappen, valueStyle, w);
+            h += U(18f) + U(T.SpaceXs) + Measure(c.QrMachineWhatItIs, valueStyle, w);
+            if (hasHappen)
+                h += U(T.SpaceMd) + U(18f) + U(T.SpaceXs) + Measure(happen, valueStyle, w);
             h += inner;
 
             var sheet = new Rect(sa.x + margin, sa.yMax - margin - h, sheetW, h);
@@ -368,10 +372,13 @@ namespace Facens.SafetyLens
             var y = sheet.y + inner;
             Label(new Rect(x, y, w, U(18f)), "O que é", labelStyle);
             y += U(18f) + U(T.SpaceXs);
-            y += Paragraph(x, y, w, c.QrMachineWhatItIs, valueStyle) + U(T.SpaceMd);
+            y += Paragraph(x, y, w, c.QrMachineWhatItIs, valueStyle);
+            if (!hasHappen) return;
+
+            y += U(T.SpaceMd);
             Label(new Rect(x, y, w, U(18f)), "O que pode acontecer", labelStyle);
             y += U(18f) + U(T.SpaceXs);
-            Paragraph(x, y, w, c.QrMachineWhatCanHappen, valueStyle);
+            Paragraph(x, y, w, happen, valueStyle);
         }
 
         /// <summary>

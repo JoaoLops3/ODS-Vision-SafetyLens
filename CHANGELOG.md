@@ -11,7 +11,11 @@ Caminho QR, primeira fatia da máquina:
 - Compressor do QR deixa de ser um bloco: tanque deitado, base, cabeçote com aletas, ventilador e tubo de saída
 - O compressor entra menor e com o centro do volume no meio da tela
 - O QR usa o FBX `Assets/Models/Motor/air-compressor.fbx` (CC0). Sem o prefab, volta às primitivas
-- As marcas do compressor ficam na saída de ar, na tampa sem roda e na grade do motor, fora dos pneus
+- A marca da tampa fica no extremo sem roda, fora dos pneus. A saída de ar quente saiu
+- A grade do motor (pode superaquecer) saiu do compressor
+- O bloco dos dois relógios marca o medidor de pressão do ar e o perigo de eletricidade
+- A mangueira amarela no alto da bomba marca a saída de ar, sem afirmar se o ar é quente
+- O disco com anéis marca o motor e a chance de queimadura
 
 ## 1.4.2
 

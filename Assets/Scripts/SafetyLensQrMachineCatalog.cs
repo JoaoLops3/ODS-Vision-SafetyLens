@@ -35,33 +35,59 @@ namespace Facens.SafetyLens
         /// <summary>Folga para dois pontos da mesma face não se eliminarem por erro numérico.</summary>
         public const float FacingTieEpsilon = 0.08f;
 
-        /// <summary>Centro da marca na boca do tubo, à frente de quem olha.</summary>
-        public static readonly Vector3 OutletPoint = new Vector3(-0.03f, 0.33f, -0.30f);
         /// <summary>Centro da marca no tampão da extremidade direita do tanque.</summary>
         public static readonly Vector3 SidePoint = new Vector3(0.26f, 0.135f, 0f);
-        /// <summary>Centro da marca na grade do ventilador, atrás do cabeçote.</summary>
-        public static readonly Vector3 FanPoint = new Vector3(-0.03f, 0.255f, 0.22f);
 
         public static SafetyLensQrMachineSpot[] CreateSpots()
         {
             return new[]
             {
                 new SafetyLensQrMachineSpot(
-                    "Saída de ar quente",
-                    "Queimar a mão",
-                    OutletPoint,
-                    Vector3.back),
-                new SafetyLensQrMachineSpot(
                     "Tampa lateral",
                     "Uma peça pode soltar",
                     SidePoint,
-                    Vector3.right),
-                new SafetyLensQrMachineSpot(
-                    "Grade do motor",
-                    "Pode superaquecer",
-                    FanPoint,
-                    Vector3.forward)
+                    Vector3.right)
             };
+        }
+
+        /// <summary>
+        /// Os dois relógios do bloco cinza. O que é o medidor; o que pode acontecer é a eletricidade.
+        /// A posição do FBX vem da textura, não deste vetor.
+        /// </summary>
+        public static SafetyLensQrMachineSpot GaugeSpot()
+        {
+            return new SafetyLensQrMachineSpot(
+                "Medidor de pressão do ar",
+                "Perigo de eletricidade",
+                new Vector3(-0.03f, 0.30f, -0.12f),
+                Vector3.back);
+        }
+
+        /// <summary>
+        /// A mangueira amarela no alto da bomba. O cartão só diz que é a saída de ar:
+        /// não dá para afirmar daqui se esse ar sai quente.
+        /// A posição do FBX vem da malha, não deste vetor.
+        /// </summary>
+        public static SafetyLensQrMachineSpot AirOutletSpot()
+        {
+            return new SafetyLensQrMachineSpot(
+                "Saída de ar",
+                string.Empty,
+                new Vector3(-0.03f, 0.33f, -0.30f),
+                Vector3.left);
+        }
+
+        /// <summary>
+        /// O disco com as faixas, ao lado da bomba. O que é o motor; o que pode acontecer é a queimadura.
+        /// A posição do FBX vem da malha, não deste vetor.
+        /// </summary>
+        public static SafetyLensQrMachineSpot MotorSpot()
+        {
+            return new SafetyLensQrMachineSpot(
+                "Motor",
+                "Chance de queimadura",
+                new Vector3(0.22f, 0.26f, 0.08f),
+                Vector3.right);
         }
 
         /// <summary>Alinhamento do normal com a direção até quem olha. -1 se o vetor for nulo.</summary>

@@ -6,19 +6,29 @@ namespace Facens.SafetyLens.Tests
     public sealed class SafetyLensQrMachineTests
     {
         [Test]
-        public void Spots_SitOnThreeDifferentFaces()
+        public void Spots_KeepTheSideCapOnly()
         {
             var spots = SafetyLensQrMachineCatalog.CreateSpots();
-            Assert.AreEqual(3, spots.Length);
+            Assert.AreEqual(1, spots.Length);
+            Assert.AreEqual("Tampa lateral", spots[0].WhatItIs);
+            Assert.AreEqual("Uma peça pode soltar", spots[0].WhatCanHappen);
+            Assert.AreEqual(Vector3.right, spots[0].LocalOutwardNormal);
+        }
 
-            var front = spots[0].LocalOutwardNormal;
-            var side = spots[1].LocalOutwardNormal;
-            var back = spots[2].LocalOutwardNormal;
+        [Test]
+        public void Motor_SaysBurnRisk()
+        {
+            var spot = SafetyLensQrMachineCatalog.MotorSpot();
+            Assert.AreEqual("Motor", spot.WhatItIs);
+            Assert.AreEqual("Chance de queimadura", spot.WhatCanHappen);
+        }
 
-            Assert.AreEqual(-1f, Vector3.Dot(front.normalized, back.normalized), 1e-4f);
-            Assert.AreEqual(0f, Vector3.Dot(front.normalized, side.normalized), 1e-4f);
-            Assert.AreEqual("Saída de ar quente", spots[0].WhatItIs);
-            Assert.AreEqual("Queimar a mão", spots[0].WhatCanHappen);
+        [Test]
+        public void AirOutlet_SaysWhereTheAirLeaves()
+        {
+            var spot = SafetyLensQrMachineCatalog.AirOutletSpot();
+            Assert.AreEqual("Saída de ar", spot.WhatItIs);
+            Assert.IsEmpty(spot.WhatCanHappen);
         }
 
         [Test]
