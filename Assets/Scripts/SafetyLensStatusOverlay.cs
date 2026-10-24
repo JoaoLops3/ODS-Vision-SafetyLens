@@ -362,22 +362,68 @@ namespace Facens.SafetyLens
             var h = headerH + whatH + happenH;
 
             var sheet = new Rect(sa.x + margin, sa.yMax - margin - h, sheetW, h);
-            Fill(sheet, T.Surface, U(T.RadiusLg));
+            var radius = U(T.RadiusLg);
+            var stroke = U(T.StrokeThin);
+            var x = sheet.x + inset;
+            var headerBottom = sheet.y + headerH;
+            var riskTop = headerBottom + whatH;
+
+            // Fundo, cabeçalho e faixa de risco antes do texto. A faixa usa o mesmo raio da folha.
+            Fill(sheet, T.Surface, radius);
+            FillSheetEnd(sheet, headerBottom, radius, T.SurfaceMuted, top: true);
+            FillSheetEnd(sheet, riskTop, radius, T.DangerSoft, top: false);
             Block(sheet);
 
-            var x = sheet.x + inset;
-            var y = sheet.y;
-            var stroke = U(T.StrokeThin);
-            Fill(new Rect(sheet.x + stroke, y + stroke, sheet.width - stroke * 2f, headerH - stroke), T.SurfaceMuted, U(T.RadiusSm));
             Label(
-                new Rect(x + pad, y + pad, gridW - pad * 2f, headerH - pad * 2f),
+                new Rect(x + pad, sheet.y + pad, gridW - pad * 2f, headerH - pad * 2f),
                 c.QrMachineName,
                 _title);
-            y += headerH;
+            DrawMachineTableRow(x, headerBottom, labelW, valueW, pad, sheet.x, sheet.width, stroke, "O que é", c.QrMachineWhatItIs, risk: false);
+            DrawMachineTableRow(x, riskTop, labelW, valueW, pad, sheet.x, sheet.width, stroke, "O que pode acontecer", c.QrMachineWhatCanHappen, risk: true);
+            Stroke(sheet, T.Border, stroke, radius);
+        }
 
-            y += DrawMachineTableRow(x, y, labelW, valueW, pad, "O que é", c.QrMachineWhatItIs, risk: false);
-            DrawMachineTableRow(x, y, labelW, valueW, pad, "O que pode acontecer", c.QrMachineWhatCanHappen, risk: true);
-            Stroke(sheet, T.Border, stroke, U(T.RadiusLg));
+        /// <summary>
+        /// Pinta a ponta da folha com o raio dela. A faixa nasce alta o bastante para o raio
+        /// não encolher; o excesso volta à cor da folha, só na parte reta, para não sair da curva.
+        /// </summary>
+        void FillSheetEnd(Rect sheet, float bandY, float radius, Color color, bool top)
+        {
+            var diameter = radius * 2f;
+            float capY;
+            float capH;
+            float coverY;
+            float coverH;
+            if (top)
+            {
+                var visible = Mathf.Max(0f, bandY - sheet.y);
+                capH = Mathf.Max(visible, diameter);
+                capY = sheet.y;
+                coverY = bandY;
+                coverH = capH - visible;
+            }
+            else
+            {
+                var visible = Mathf.Max(0f, sheet.yMax - bandY);
+                capH = Mathf.Max(visible, diameter);
+                capY = sheet.yMax - capH;
+                coverY = capY;
+                coverH = capH - visible;
+            }
+
+            Fill(new Rect(sheet.x, capY, sheet.width, capH), color, radius);
+
+            // A parte reta da faixa vai até a borda. O quarto de círculo fica só no canto da folha.
+            var squareTop = top ? sheet.y + radius : bandY;
+            var squareBottom = top ? bandY : sheet.yMax - radius;
+            if (squareBottom > squareTop)
+                Fill(new Rect(sheet.x, squareTop, sheet.width, squareBottom - squareTop), color, 0f);
+
+            if (coverH <= 0f) return;
+            var y0 = Mathf.Max(coverY, sheet.y + radius);
+            var y1 = Mathf.Min(coverY + coverH, sheet.yMax - radius);
+            if (y1 > y0)
+                Fill(new Rect(sheet.x, y0, sheet.width, y1 - y0), T.Surface, 0f);
         }
 
         /// <summary>
@@ -392,27 +438,27 @@ namespace Facens.SafetyLens
         }
 
         /// <summary>
-        /// Uma linha da ficha: rótulo à esquerda, frase à direita. A linha de risco usa o fundo de perigo.
+        /// Uma linha da ficha: rótulo à esquerda, frase à direita. O fundo da faixa fica na folha.
         /// </summary>
-        float DrawMachineTableRow(
+        void DrawMachineTableRow(
             float x,
             float y,
             float labelW,
             float valueW,
             float pad,
+            float sheetX,
+            float sheetW,
+            float stroke,
             string label,
             string value,
             bool risk)
         {
             var h = MachineRowHeight(labelW, valueW, pad, label, value);
-            var row = new Rect(x - pad, y, labelW + valueW + pad * 2f, h);
-            if (risk) Fill(row, T.DangerSoft, 0f);
-            Fill(new Rect(row.x, y, row.width, U(T.StrokeThin)), T.Border, 0f);
+            Fill(new Rect(sheetX + stroke, y, sheetW - stroke * 2f, stroke), T.Border, 0f);
 
             var labelStyle = Aligned(Colored(_captionStrong, risk ? T.Danger : T.InkSoft), TextAnchor.UpperLeft);
             Label(new Rect(x, y + pad, labelW - pad, h - pad * 2f), label, labelStyle);
             Label(new Rect(x + labelW, y + pad, valueW - pad, h - pad * 2f), value, _body);
-            return h;
         }
 
         /// <summary>

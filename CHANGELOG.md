@@ -18,6 +18,7 @@ Caminho QR, primeira fatia da máquina:
 - A ficha do ponto é uma tabela: nome da peça, o que é e o que pode acontecer. O medidor avisa pressão alta, não eletricidade
 - O nome fica na marca antes do toque. Depois de abrir a ficha, a marca fica verde e o giro não apaga isso
 - O nome nasce colado na marca. Cada linha fica menor que o ponto, para a palavra não cobrir a peça
+- A faixa da ficha segue o canto arredondado da folha e não passa da borda
 - O disco com anéis marca o motor e a chance de queimadura
 
 ## 1.4.2
