@@ -72,7 +72,10 @@ namespace Facens.SafetyLens
         /// <summary>True quando o toque abriu a tabela de um ponto do compressor.</summary>
         public bool QrMachineHasPoint => Phase == AppPhase.QrMachine && _machine.Selected != null;
 
-        /// <summary>Primeira linha da tabela do ponto aberto. Vazio sem seleção.</summary>
+        /// <summary>Título da tabela do ponto aberto. Vazio sem seleção.</summary>
+        public string QrMachineName => _machine.Selected != null ? _machine.Selected.Name : string.Empty;
+
+        /// <summary>Linha "O que é" da tabela do ponto aberto. Vazio sem seleção.</summary>
         public string QrMachineWhatItIs => _machine.Selected != null ? _machine.Selected.WhatItIs : string.Empty;
 
         /// <summary>Segunda linha da tabela do ponto aberto. Vazio sem seleção.</summary>

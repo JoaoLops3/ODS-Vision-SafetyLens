@@ -3,19 +3,26 @@ using UnityEngine;
 namespace Facens.SafetyLens
 {
     /// <summary>
-    /// Um ponto provisório na superfície do compressor.
-    /// O texto é de mentira nesta fatia: queimadura, pinçamento e EPI entram depois, no mesmo cartão.
+    /// Um ponto na superfície do compressor.
+    /// O nome é o título da tabela. As duas frases são as linhas, curtas o bastante para caber no cartão.
     /// </summary>
     public readonly struct SafetyLensQrMachineSpot
     {
-        public SafetyLensQrMachineSpot(string whatItIs, string whatCanHappen, Vector3 localPosition, Vector3 localOutwardNormal)
+        public SafetyLensQrMachineSpot(
+            string name,
+            string whatItIs,
+            string whatCanHappen,
+            Vector3 localPosition,
+            Vector3 localOutwardNormal)
         {
+            Name = name;
             WhatItIs = whatItIs;
             WhatCanHappen = whatCanHappen;
             LocalPosition = localPosition;
             LocalOutwardNormal = localOutwardNormal;
         }
 
+        public string Name { get; }
         public string WhatItIs { get; }
         public string WhatCanHappen { get; }
         public Vector3 LocalPosition { get; }
@@ -44,48 +51,52 @@ namespace Facens.SafetyLens
             {
                 new SafetyLensQrMachineSpot(
                     "Tampa lateral",
-                    "Uma peça pode soltar",
+                    "Fecha a ponta do tanque, no lado sem a roda.",
+                    "Com pressão, a tampa solta e sai com força.",
                     SidePoint,
                     Vector3.right)
             };
         }
 
         /// <summary>
-        /// Os dois relógios do bloco cinza. O que é o medidor; o que pode acontecer é a eletricidade.
+        /// Os dois relógios do bloco cinza. O risco é pressão alta passar batida, não eletricidade.
         /// A posição do FBX vem da textura, não deste vetor.
         /// </summary>
         public static SafetyLensQrMachineSpot GaugeSpot()
         {
             return new SafetyLensQrMachineSpot(
-                "Medidor de pressão do ar",
-                "Perigo de eletricidade",
+                "Medidor de pressão",
+                "Mostra quanta pressão tem o ar no tanque.",
+                "Se a leitura falha, a pressão alta passa batida.",
                 new Vector3(-0.03f, 0.30f, -0.12f),
                 Vector3.back);
         }
 
         /// <summary>
-        /// A mangueira amarela no alto da bomba. O cartão só diz que é a saída de ar:
-        /// não dá para afirmar daqui se esse ar sai quente.
+        /// A mangueira amarela no alto da bomba. O risco é o jato e o chicote,
+        /// não o calor: daqui não dá para afirmar se esse ar sai quente.
         /// A posição do FBX vem da malha, não deste vetor.
         /// </summary>
         public static SafetyLensQrMachineSpot AirOutletSpot()
         {
             return new SafetyLensQrMachineSpot(
                 "Saída de ar",
-                string.Empty,
+                "Por aqui o ar comprimido sai da bomba.",
+                "O jato no olho fere. A mangueira solta chicoteia.",
                 new Vector3(-0.03f, 0.33f, -0.30f),
                 Vector3.left);
         }
 
         /// <summary>
-        /// O disco com as faixas, ao lado da bomba. O que é o motor; o que pode acontecer é a queimadura.
+        /// O disco com as faixas, ao lado da bomba. A carcaça do motor esquenta.
         /// A posição do FBX vem da malha, não deste vetor.
         /// </summary>
         public static SafetyLensQrMachineSpot MotorSpot()
         {
             return new SafetyLensQrMachineSpot(
                 "Motor",
-                "Chance de queimadura",
+                "Gira a bomba. A tampa cobre a carcaça.",
+                "A carcaça esquenta e queima a mão.",
                 new Vector3(0.22f, 0.26f, 0.08f),
                 Vector3.right);
         }

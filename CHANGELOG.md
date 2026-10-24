@@ -14,7 +14,10 @@ Caminho QR, primeira fatia da máquina:
 - A marca da tampa fica no extremo sem roda, fora dos pneus. A saída de ar quente saiu
 - A grade do motor (pode superaquecer) saiu do compressor
 - O bloco dos dois relógios marca o medidor de pressão do ar e o perigo de eletricidade
-- A mangueira amarela no alto da bomba marca a saída de ar, sem afirmar se o ar é quente
+- A mangueira amarela no alto da bomba marca a saída de ar. O risco é o jato e o chicote, sem afirmar se o ar é quente
+- A ficha do ponto é uma tabela: nome da peça, o que é e o que pode acontecer. O medidor avisa pressão alta, não eletricidade
+- O nome fica na marca antes do toque. Depois de abrir a ficha, a marca fica verde e o giro não apaga isso
+- O nome nasce colado na marca. Cada linha fica menor que o ponto, para a palavra não cobrir a peça
 - O disco com anéis marca o motor e a chance de queimadura
 
 ## 1.4.2

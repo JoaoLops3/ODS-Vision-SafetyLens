@@ -332,7 +332,7 @@ namespace Facens.SafetyLens
 
         void DrawQrMachineHint(Rect sa)
         {
-            const string hint = "Gire o compressor. Toque no ponto da face à sua frente.";
+            const string hint = "Gire o compressor. Toque no nome da face à sua frente.";
             var margin = U(T.SpaceMd);
             var inner = U(T.SpaceLg);
             var sheetW = sa.width - margin * 2f;
@@ -349,36 +349,70 @@ namespace Facens.SafetyLens
         {
             var c = _controller;
             var margin = U(T.SpaceMd);
-            var inner = U(T.SpaceLg);
+            var inset = U(T.SpaceMd);
             var sheetW = sa.width - margin * 2f;
-            var w = sheetW - inner * 2f;
-            var labelStyle = _captionStrong;
-            var valueStyle = _bodyStrong;
+            var gridW = sheetW - inset * 2f;
+            var labelW = gridW * 0.42f;
+            var valueW = gridW - labelW;
+            var pad = U(T.SpaceSm);
 
-            var happen = c.QrMachineWhatCanHappen;
-            var hasHappen = !string.IsNullOrWhiteSpace(happen);
-
-            var h = inner;
-            h += U(18f) + U(T.SpaceXs) + Measure(c.QrMachineWhatItIs, valueStyle, w);
-            if (hasHappen)
-                h += U(T.SpaceMd) + U(18f) + U(T.SpaceXs) + Measure(happen, valueStyle, w);
-            h += inner;
+            var headerH = pad * 2f + Measure(c.QrMachineName, _title, gridW - pad * 2f);
+            var whatH = MachineRowHeight(labelW, valueW, pad, "O que é", c.QrMachineWhatItIs);
+            var happenH = MachineRowHeight(labelW, valueW, pad, "O que pode acontecer", c.QrMachineWhatCanHappen);
+            var h = headerH + whatH + happenH;
 
             var sheet = new Rect(sa.x + margin, sa.yMax - margin - h, sheetW, h);
             Fill(sheet, T.Surface, U(T.RadiusLg));
             Block(sheet);
 
-            var x = sheet.x + inner;
-            var y = sheet.y + inner;
-            Label(new Rect(x, y, w, U(18f)), "O que é", labelStyle);
-            y += U(18f) + U(T.SpaceXs);
-            y += Paragraph(x, y, w, c.QrMachineWhatItIs, valueStyle);
-            if (!hasHappen) return;
+            var x = sheet.x + inset;
+            var y = sheet.y;
+            var stroke = U(T.StrokeThin);
+            Fill(new Rect(sheet.x + stroke, y + stroke, sheet.width - stroke * 2f, headerH - stroke), T.SurfaceMuted, U(T.RadiusSm));
+            Label(
+                new Rect(x + pad, y + pad, gridW - pad * 2f, headerH - pad * 2f),
+                c.QrMachineName,
+                _title);
+            y += headerH;
 
-            y += U(T.SpaceMd);
-            Label(new Rect(x, y, w, U(18f)), "O que pode acontecer", labelStyle);
-            y += U(18f) + U(T.SpaceXs);
-            Paragraph(x, y, w, happen, valueStyle);
+            y += DrawMachineTableRow(x, y, labelW, valueW, pad, "O que é", c.QrMachineWhatItIs, risk: false);
+            DrawMachineTableRow(x, y, labelW, valueW, pad, "O que pode acontecer", c.QrMachineWhatCanHappen, risk: true);
+            Stroke(sheet, T.Border, stroke, U(T.RadiusLg));
+        }
+
+        /// <summary>
+        /// Altura da linha pela coluna mais alta. O rótulo e o valor dividem a mesma faixa.
+        /// </summary>
+        float MachineRowHeight(float labelW, float valueW, float pad, string label, string value)
+        {
+            var innerLabel = Mathf.Max(0f, labelW - pad * 2f);
+            var innerValue = Mathf.Max(0f, valueW - pad * 2f);
+            var textH = Mathf.Max(Measure(label, _captionStrong, innerLabel), Measure(value, _body, innerValue));
+            return textH + pad * 2f;
+        }
+
+        /// <summary>
+        /// Uma linha da ficha: rótulo à esquerda, frase à direita. A linha de risco usa o fundo de perigo.
+        /// </summary>
+        float DrawMachineTableRow(
+            float x,
+            float y,
+            float labelW,
+            float valueW,
+            float pad,
+            string label,
+            string value,
+            bool risk)
+        {
+            var h = MachineRowHeight(labelW, valueW, pad, label, value);
+            var row = new Rect(x - pad, y, labelW + valueW + pad * 2f, h);
+            if (risk) Fill(row, T.DangerSoft, 0f);
+            Fill(new Rect(row.x, y, row.width, U(T.StrokeThin)), T.Border, 0f);
+
+            var labelStyle = Aligned(Colored(_captionStrong, risk ? T.Danger : T.InkSoft), TextAnchor.UpperLeft);
+            Label(new Rect(x, y + pad, labelW - pad, h - pad * 2f), label, labelStyle);
+            Label(new Rect(x + labelW, y + pad, valueW - pad, h - pad * 2f), value, _body);
+            return h;
         }
 
         /// <summary>

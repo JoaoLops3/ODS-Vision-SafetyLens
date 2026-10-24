@@ -53,7 +53,9 @@ namespace Facens.SafetyLens
             }
 
             // A origem da malha é o chão da base. Sem este passo o corpo fica acima do meio da tela.
+            // O nome entra depois: o TextMesh é largo e puxaria o centro para fora da máquina.
             CenterOnCameraAxis();
+            AttachNames();
             RefreshFacing();
         }
 
@@ -85,7 +87,9 @@ namespace Facens.SafetyLens
                 var point = _points[i];
                 var facing = SafetyLensQrMachineCatalog.IsOnViewerFace(DotTowardViewer(point), best);
                 var selected = point == _selected;
-                point.SetAppearance(facing ? SafetyLensTheme.Brand : SafetyLensTheme.HazardIdle, PointLocalDiameter(selected));
+                point.SetAppearance(
+                    SafetyLensQrMachinePoint.AppearanceColor(point.Read, facing),
+                    PointLocalDiameter(selected));
             }
         }
 
@@ -101,16 +105,22 @@ namespace Facens.SafetyLens
             if (hitPoint != null)
             {
                 if (!IsOnViewerFace(hitPoint)) return false;
-                _selected = hitPoint;
-                RefreshFacing();
+                Open(hitPoint);
                 return true;
             }
 
             var fallback = NearestFacingPoint(screenPosition);
             if (fallback == null) return false;
-            _selected = fallback;
-            RefreshFacing();
+            Open(fallback);
             return true;
+        }
+
+        /// <summary>Abrir a ficha conta como leitura. Fechar a face não desfaz.</summary>
+        void Open(SafetyLensQrMachinePoint point)
+        {
+            point.MarkRead();
+            _selected = point;
+            RefreshFacing();
         }
 
         public void Clear()
@@ -726,6 +736,7 @@ namespace Facens.SafetyLens
             go.transform.localScale = Vector3.one * PointLocalDiameter(false);
 
             var point = go.AddComponent<SafetyLensQrMachinePoint>();
+            point.Name = spot.Name;
             point.WhatItIs = spot.WhatItIs;
             point.WhatCanHappen = spot.WhatCanHappen;
             point.LocalOutwardNormal = outwardNormal.sqrMagnitude < 1e-8f
@@ -739,6 +750,84 @@ namespace Facens.SafetyLens
             renderer.receiveShadows = false;
             point.Bind(material);
             _points.Add(point);
+        }
+
+        /// <summary>
+        /// Nome acima da marca, virado para a câmera. Nasce depois de centralizar o volume.
+        /// A escala sai da altura do glifo: sem isso a palavra fica do tamanho da fonte e sai da marca.
+        /// </summary>
+        void AttachNames()
+        {
+            for (var i = 0; i < _points.Count; i++)
+            {
+                var point = _points[i];
+                var label = new GameObject("QrMachineName");
+                label.transform.SetParent(_yaw, false);
+                label.transform.localScale = Vector3.one;
+
+                var billboard = label.AddComponent<SafetyLensBillboard>();
+                billboard.anchor = point.GetComponent<Renderer>();
+                billboard.gap = SafetyLensTheme.QrMachineLabelGap;
+
+                var text = SafetyLensQrMachinePoint.FormatLabel(point.Name);
+                CreateNameText(label.transform, "Shadow", text, SafetyLensTheme.ArLabelShadow, new Vector3(0.06f, -0.06f, 0.02f));
+                var face = CreateNameText(label.transform, "Text", text, SafetyLensTheme.OnDark, Vector3.zero);
+                FitNameToPoint(label.transform, face);
+            }
+        }
+
+        /// <summary>
+        /// Uma linha fica menor que o diâmetro da marca, para a palavra não cobrir a peça.
+        /// Este TextMesh não tem MeshFilter: o tamanho sai do glifo, senão a escala fica em 1 e a palavra vai embora.
+        /// </summary>
+        static void FitNameToPoint(Transform label, TextMesh face)
+        {
+            var parent = label.parent != null ? Mathf.Abs(label.parent.lossyScale.y) : 1f;
+            var desired = SafetyLensTheme.QrMachinePointSize * SafetyLensTheme.QrMachineLabelToPoint;
+            var scale = SafetyLensQrMachinePoint.LabelLocalScale(GlyphPixels(face), face.characterSize, parent, desired);
+            if (scale <= 0f) return;
+            label.localScale = Vector3.one * scale;
+        }
+
+        /// <summary>Altura, em pixels da fonte, da letra mais alta desta linha. O bloco de duas linhas não entra.</summary>
+        static int GlyphPixels(TextMesh face)
+        {
+            var size = face.fontSize > 0 ? face.fontSize : 1;
+            var font = face.font;
+            var text = face.text;
+            if (font == null || string.IsNullOrEmpty(text)) return size;
+
+            font.RequestCharactersInTexture(text, size, face.fontStyle);
+            var pixels = 0;
+            for (var i = 0; i < text.Length; i++)
+            {
+                var c = text[i];
+                if (c == '\n' || c == ' ') continue;
+                if (!font.GetCharacterInfo(c, out var info, size, face.fontStyle)) continue;
+                var height = info.glyphHeight > 0 ? info.glyphHeight : info.maxY - info.minY;
+                if (height > pixels) pixels = height;
+            }
+
+            return pixels > 0 ? pixels : size;
+        }
+
+        static TextMesh CreateNameText(Transform parent, string name, string text, Color color, Vector3 offset)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = offset;
+            var mesh = go.AddComponent<TextMesh>();
+            mesh.text = text;
+            mesh.anchor = TextAnchor.LowerCenter;
+            mesh.alignment = TextAlignment.Center;
+            mesh.fontSize = 64;
+            mesh.characterSize = 0.5f;
+            mesh.fontStyle = FontStyle.Bold;
+            mesh.color = color;
+            var renderer = go.GetComponent<Renderer>();
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            return mesh;
         }
 
         Transform Part(string name, PrimitiveType type, Vector3 localPosition, Vector3 localScale, Quaternion localRotation, Color color)

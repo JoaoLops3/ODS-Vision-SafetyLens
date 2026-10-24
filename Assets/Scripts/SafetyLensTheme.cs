@@ -155,6 +155,10 @@ namespace Facens.SafetyLens
         public const float QrMachineYawSensitivity = 0.32f;
         /// <summary>QR máquina: diâmetro da marca na superfície (metros).</summary>
         public const float QrMachinePointSize = 0.04f;
+        /// <summary>Altura de uma linha do nome dividida pelo diâmetro da marca. Menor que o ponto, para a palavra não cobrir a peça.</summary>
+        public const float QrMachineLabelToPoint = 0.42f;
+        /// <summary>Folga entre o topo da marca e a base do nome.</summary>
+        public const float QrMachineLabelGap = 0.006f;
 
         public const float SpaceXs = 4f;
         public const float SpaceSm = 8f;
